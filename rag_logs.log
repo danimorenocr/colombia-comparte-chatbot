@@ -1,0 +1,71 @@
+[2026-05-14 14:16:09] INFO     - Iniciando carga de archivo: data/Colombia_Comparte_BASE_RAG_v2.txt
+[2026-05-14 14:16:09] INFO     - Iniciando proceso de chunking...
+[2026-05-14 14:16:09] INFO     - Guardando chunks en: data/chunks.json
+[2026-05-14 14:16:09] INFO     - Iniciando generación de embeddings
+[2026-05-14 14:16:09] INFO     - Modelo a utilizar: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+[2026-05-14 14:16:09] INFO     - No device provided, using cpu
+[2026-05-14 14:16:10] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:10] WARNING  - Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[2026-05-14 14:16:10] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/modules.json "HTTP/1.1 200 OK"
+[2026-05-14 14:16:10] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:10] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/config_sentence_transformers.json "HTTP/1.1 200 OK"
+[2026-05-14 14:16:10] INFO     - Loading SentenceTransformer model from sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2.
+[2026-05-14 14:16:10] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/config_sentence_transformers.json "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:10] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/config_sentence_transformers.json "HTTP/1.1 200 OK"
+[2026-05-14 14:16:11] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:11] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/README.md "HTTP/1.1 200 OK"
+[2026-05-14 14:16:11] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/modules.json "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:11] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/modules.json "HTTP/1.1 200 OK"
+[2026-05-14 14:16:11] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/sentence_bert_config.json "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:11] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/sentence_bert_config.json "HTTP/1.1 200 OK"
+[2026-05-14 14:16:11] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/adapter_config.json "HTTP/1.1 404 Not Found"
+[2026-05-14 14:16:11] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:12] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/config.json "HTTP/1.1 200 OK"
+[2026-05-14 14:16:12] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/processor_config.json "HTTP/1.1 404 Not Found"
+[2026-05-14 14:16:12] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+[2026-05-14 14:16:12] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/video_preprocessor_config.json "HTTP/1.1 404 Not Found"
+[2026-05-14 14:16:12] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/preprocessor_config.json "HTTP/1.1 404 Not Found"
+[2026-05-14 14:16:12] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:13] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/tokenizer_config.json "HTTP/1.1 200 OK"
+[2026-05-14 14:16:13] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:13] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/config.json "HTTP/1.1 200 OK"
+[2026-05-14 14:16:13] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:13] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/config.json "HTTP/1.1 200 OK"
+[2026-05-14 14:16:13] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:13] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/tokenizer_config.json "HTTP/1.1 200 OK"
+[2026-05-14 14:16:13] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:14] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/tokenizer_config.json "HTTP/1.1 200 OK"
+[2026-05-14 14:16:14] INFO     - HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[2026-05-14 14:16:14] INFO     - HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[2026-05-14 14:16:17] INFO     - HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 "HTTP/1.1 200 OK"
+[2026-05-14 14:16:17] INFO     - HTTP Request: HEAD https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/resolve/main/1_Pooling/config.json "HTTP/1.1 307 Temporary Redirect"
+[2026-05-14 14:16:17] INFO     - HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2/e8f8c211226b894fcb81acc59f3b34ba3efd5f42/1_Pooling%2Fconfig.json "HTTP/1.1 200 OK"
+[2026-05-14 14:16:17] INFO     - HTTP Request: GET https://huggingface.co/api/models/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 "HTTP/1.1 200 OK"
+[2026-05-14 14:16:18] INFO     - Iniciando creación de índice FAISS
+[2026-05-14 14:16:18] INFO     - Dimensión de embeddings: 384
+[2026-05-14 14:16:18] INFO     - INICIANDO VALIDACIÓN DE BÚSQUEDA SEMÁNTICA
+[2026-05-14 14:16:18] INFO     - 
+[Prueba 1/5] Pregunta: ¿Qué es Colombia Comparte?
+[2026-05-14 14:16:18] INFO     -   Resultado 1: [0.7748] SECCIÓN 23 - CONTACTO COMPLETO
+[2026-05-14 14:16:18] INFO     -   Resultado 2: [0.7454] SECCIÓN 1 - QUÉ ES COLOMBIA COMPARTE
+[2026-05-14 14:16:18] INFO     -   Resultado 3: [0.7196] SECCIÓN 19 - EXPANSIÓN EN LATINOAMÉRICA
+[2026-05-14 14:16:18] INFO     - 
+[Prueba 2/5] Pregunta: ¿Cómo me inscribo al programa EDIFICA?
+[2026-05-14 14:16:18] INFO     -   Resultado 1: [0.6189] SECCIÓN 13 - INSCRIPCIÓN A COMPARTE ACADEMIA
+[2026-05-14 14:16:18] INFO     -   Resultado 2: [0.5451] SECCIÓN 10 - PROGRAMA ESTRUCTURA
+[2026-05-14 14:16:18] INFO     -   Resultado 3: [0.4984] SECCIÓN 9 - PROGRAMA DESKUBRE
+[2026-05-14 14:16:18] INFO     - 
+[Prueba 3/5] Pregunta: ¿Qué es Comparte Academia?
+[2026-05-14 14:16:18] INFO     -   Resultado 1: [0.5855] SECCIÓN 8 - QUÉ ES COMPARTE ACADEMIA
+[2026-05-14 14:16:18] INFO     -   Resultado 2: [0.5502] SECCIÓN 7 - NUEVA ARQUITECTURA DE MARCA: LATINOAMÉRICA COMPARTE
+[2026-05-14 14:16:18] INFO     -   Resultado 3: [0.5429] SECCIÓN 11 - A QUIÉN VA DIRIGIDO COMPARTE ACADEMIA
+[2026-05-14 14:16:18] INFO     - 
+[Prueba 4/5] Pregunta: ¿Cuántas personas han sido impactadas?
+[2026-05-14 14:16:18] INFO     -   Resultado 1: [0.4132] SECCIÓN 18 - IMPACTO EN CIFRAS
+[2026-05-14 14:16:18] INFO     -   Resultado 2: [0.3784] SECCIÓN 4 - PERFIL DEL BENEFICIARIO
+[2026-05-14 14:16:18] INFO     -   Resultado 3: [0.3658] SECCIÓN 2 - HISTORIA Y FUNDADORES
+[2026-05-14 14:16:18] INFO     - 
+[Prueba 5/5] Pregunta: ¿Cómo puedo contactarlos?
+[2026-05-14 14:16:18] INFO     -   Resultado 1: [0.3421] SECCIÓN 13 - INSCRIPCIÓN A COMPARTE ACADEMIA
+[2026-05-14 14:16:18] INFO     -   Resultado 2: [0.2575] SECCIÓN 22 - EQUIPO
+[2026-05-14 14:16:18] INFO     -   Resultado 3: [0.2346] SECCIÓN 17 - FORMAS DE COLABORACIÓN Y DONACIONES

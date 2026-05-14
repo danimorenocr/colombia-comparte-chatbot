@@ -1,0 +1,117 @@
+[
+  {
+    "id": 1,
+    "seccion": "SECCIÓN 1 - QUÉ ES COLOMBIA COMPARTE",
+    "texto": "Colombia Comparte es una organización social autosostenible sin ánimo de lucro que impulsa el emprendimiento con propósito, el bienestar empresarial, la cultura organizacional, el liderazgo humano y la productividad sostenible. Es una comunidad de mentores, coaches, conferencistas y aliados que creen en el poder del propósito, la empatía y el servicio. Su lema es impulsar el progreso humano y productivo dentro y fuera de la empresa. Cuando una persona se transforma, su familia cambia. Y cuando las familias están bien, las empresas prosperan."
+  },
+  {
+    "id": 2,
+    "seccion": "SECCIÓN 2 - HISTORIA Y FUNDADORES",
+    "texto": "Colombia Comparte nació de una historia real de pérdida, fe y reconstrucción vivida por sus cofundadores, Carolina Ruiz Herrera y Eduardo Del Castillo. Ellos vivieron en carne propia lo que significa perderlo todo y levantarse. Descubrieron que cuando una persona vuelve a sentirse productiva, vuelve a vivir. Guiados por un profundo deseo de servir, crearon la organización para acompañar a quienes enfrentan la pobreza oculta. Llevan más de 10 años dedicados a acompañar personas en procesos de reconstrucción económica y de vida."
+  },
+  {
+    "id": 3,
+    "seccion": "SECCIÓN 3 - LA POBREZA OCULTA",
+    "texto": "En Colombia existe una realidad invisible: familias que parecen gozar de estabilidad pero que, tras la pérdida de un empleo o el fracaso de un negocio, caen en lo que se denomina pobreza oculta. Se trata de personas con estudios y experiencia que enfrentan deudas y crisis sin las herramientas tradicionales de asistencia social. El enfoque central de Colombia Comparte no es asistir sino reactivar la vida productiva, construyendo soluciones conjuntas en lugar de regalarlas."
+  },
+  {
+    "id": 4,
+    "seccion": "SECCIÓN 4 - PERFIL DEL BENEFICIARIO",
+    "texto": "La fundación se enfoca en las denominadas familias vergonzantes, caracterizadas por: pertenecer a los estratos socioeconómicos 4, 5 y 6; poseer formación profesional o técnica previa; atravesar una crisis económica aguda; y tener resistencia a buscar ayuda debido al estigma social o al orgullo. Esta población no aparece en estadísticas tradicionales de pobreza pero enfrenta situaciones de alta vulnerabilidad."
+  },
+  {
+    "id": 5,
+    "seccion": "SECCIÓN 5 - A QUIÉNES AYUDA",
+    "texto": "Colombia Comparte acompaña a tres públicos principales. Primero, personas y familias en reconstrucción económica afectadas por pobreza oculta causada por quiebra, despido o enfermedad. Segundo, emprendedores que quieren crear o fortalecer su negocio a través de Comparte Academia (antes EDIFICA). Tercero, empresas comprometidas con el bienestar de su gente que buscan fortalecer cultura organizacional, mejorar liderazgo y aumentar productividad humana."
+  },
+  {
+    "id": 6,
+    "seccion": "SECCIÓN 6 - RUTA DE EMPLEABILIDAD",
+    "texto": "La Ruta de Empleabilidad es uno de los dos pilares de acción de Colombia Comparte. Conecta a los beneficiarios directamente con vacantes y oportunidades laborales. Incluye actualización y reactivación del perfil profesional para el mercado actual, y acompañamiento integral en el proceso de reinserción laboral."
+  },
+  {
+    "id": 7,
+    "seccion": "SECCIÓN 7 - NUEVA ARQUITECTURA DE MARCA: LATINOAMÉRICA COMPARTE",
+    "texto": "La organización evolucionó su marca hacia Latinoamérica Comparte. Anteriormente la comunicación estaba enfocada en los programas EDIFICA, NODUS y TOP SPEAKERS. Hoy la estructura se organiza en tres grandes líneas: Comparte Academia (antes EDIFICA) para formación y emprendimiento, Comparte Liderazgo (antes NODUS) para liderazgo y desarrollo humano, y Comparte Talento (antes TOP SPEAKERS) para conferencias, speakers y eventos corporativos."
+  },
+  {
+    "id": 8,
+    "seccion": "SECCIÓN 8 - QUÉ ES COMPARTE ACADEMIA",
+    "texto": "Comparte Academia, anteriormente conocida como EDIFICA, es la línea de formación y emprendimiento de Colombia Comparte. Es un Programa de Altos Estudios en Emprendimiento que combina el pilar emocional y el pilar académico para formar emprendedores capaces de construir negocios reales y sostenibles. Ha permitido que más de 1.200 personas y familias vuelvan a ser productivas. Dentro de Comparte Academia existen dos programas principales: DESKUBRE y ESTRUCTURA."
+  },
+  {
+    "id": 9,
+    "seccion": "SECCIÓN 9 - PROGRAMA DESKUBRE",
+    "texto": "DESKUBRE (antes EDIFICA DESKUBRE) es el programa inicial de emprendimiento de Comparte Academia. Está enfocado en ayudar a las personas a descubrir, despertar y estructurar sus capacidades emprendedoras. Está dirigido a quienes desean emprender, tienen una idea en construcción o necesitan claridad para definir el camino de su proyecto. Su enfoque es exploración, mentalidad, validación inicial y orientación emprendedora. Tiene una duración de 1 mes."
+  },
+  {
+    "id": 10,
+    "seccion": "SECCIÓN 10 - PROGRAMA ESTRUCTURA",
+    "texto": "ESTRUCTURA (antes EDIFICA ESTRUCTURA) es el programa avanzado de emprendimiento de Comparte Academia. Está diseñado para personas que ya tienen una idea de negocio o un emprendimiento en marcha y desean fortalecerlo de manera organizada, estratégica y sostenible. Se trabajan: estructuración empresarial, modelo de negocio, finanzas, marketing, ventas, liderazgo, trabajo de campo y acompañamiento personalizado. Tiene una duración de 12 meses, incluyendo formación, trabajo de campo, etapa de vuelo y acompañamiento."
+  },
+  {
+    "id": 11,
+    "seccion": "SECCIÓN 11 - A QUIÉN VA DIRIGIDO COMPARTE ACADEMIA",
+    "texto": "Comparte Academia (antes EDIFICA) está dirigida a: familias de colaboradores de empresas aliadas, comunidades específicas y vulnerables, personas en transición laboral, procesos de outplacement, prepensionados, y personas que enfrentan pobreza vergonzante o quiebra."
+  },
+  {
+    "id": 12,
+    "seccion": "SECCIÓN 12 - QUÉ LOGRA COMPARTE ACADEMIA",
+    "texto": "Comparte Academia (antes EDIFICA) logra: reconstrucción económica y estabilidad financiera, desarrollo personal y confianza, creación de negocios sostenibles y formalizados, estructura empresarial, enfoque y visión de negocios, y conexión con una comunidad de emprendedores. Los participantes valoran especialmente las mentorías especializadas, el acompañamiento emocional, el plan de ventas, la formalización empresarial, y la pertenencia a una comunidad."
+  },
+  {
+    "id": 13,
+    "seccion": "SECCIÓN 13 - INSCRIPCIÓN A COMPARTE ACADEMIA",
+    "texto": "Las personas interesadas en inscribirse a Comparte Academia (antes EDIFICA) deben diligenciar el formulario disponible en: https://colombiacomparte.com/programa-edifica/. Para más información pueden escribir directamente a: Eduardodelcastillo@colombiacomparte.com o llamar al teléfono 316 467 3087."
+  },
+  {
+    "id": 14,
+    "seccion": "SECCIÓN 14 - QUÉ ES COMPARTE LIDERAZGO",
+    "texto": "Comparte Liderazgo, anteriormente conocido como NODUS, es el programa de liderazgo con mentalidad emprendedora de Colombia Comparte. Desarrolla líderes que entienden el negocio, toman decisiones estratégicas con criterio, alinean equipos hacia objetivos comunes y generan productividad sostenible. No forma líderes operativos sino líderes que estructuran productividad. Es ideal para directivos, gerentes y líderes de equipos que quieren potenciar su impacto dentro de la organización."
+  },
+  {
+    "id": 15,
+    "seccion": "SECCIÓN 15 - QUÉ ES COMPARTE TALENTO",
+    "texto": "Comparte Talento, anteriormente conocida como TOP SPEAKERS, es el portafolio de conferencistas, autores, líderes, artistas, comediantes, deportistas y expertos de Colombia Comparte. Llevan a las empresas experiencias que fortalecen liderazgo consciente, inspiran propósito, reducen la desconexión emocional, combaten la renuncia silenciosa, mejoran el clima organizacional y elevan la motivación. Cuando las personas se sienten vistas, valoradas e inspiradas, la empresa lo siente en los resultados."
+  },
+  {
+    "id": 16,
+    "seccion": "SECCIÓN 16 - PORTAFOLIO EMPRESARIAL COMBINADO",
+    "texto": "El portafolio empresarial de Colombia Comparte combina tres frentes: Comparte Liderazgo (antes NODUS) para liderazgo con pensamiento emprendedor, Comparte Academia (antes EDIFICA) para crear un entorno productivo que sostiene a las personas, y Comparte Talento (antes TOP SPEAKERS) para cultura que moviliza a través de conferencistas. El resultado combinado es: mayor productividad organizacional, colaboradores más estables y comprometidos, equipos alineados con la cultura, e impacto positivo medible. Colombia Comparte ha acompañado a más de 70 empresas."
+  },
+  {
+    "id": 17,
+    "seccion": "SECCIÓN 17 - FORMAS DE COLABORACIÓN Y DONACIONES",
+    "texto": "Colombia Comparte tiene tres formas de colaboración: Donaciones para fondos de alimentación y estabilización temporal de familias en crisis. Voluntariado Pro-bono que incluye mentorías, coaching y transferencia de conocimiento técnico. Alianzas Corporativas para programas de impacto social y responsabilidad empresarial. Información bancaria para donaciones: Banco Bancolombia, Cuenta de ahorros, Número: 084-000103-67, A nombre de: Fundación Colombia Comparte, NIT: 901.213.196-8."
+  },
+  {
+    "id": 18,
+    "seccion": "SECCIÓN 18 - IMPACTO EN CIFRAS",
+    "texto": "En más de 10 años de trayectoria, Colombia Comparte ha impactado a más de 1.200 personas y familias en su reconstrucción productiva, acompañado a más de 70 empresas comprometidas con su gente, y contado con más de 65 mentores y voluntarios activos. Sus emprendedores no solo reconstruyen sus propias vidas, sino que también generan empleo y desarrollo en sus comunidades."
+  },
+  {
+    "id": 19,
+    "seccion": "SECCIÓN 19 - EXPANSIÓN EN LATINOAMÉRICA",
+    "texto": "Después del éxito en Bogotá, Colombia Comparte expandió operaciones a Ecuador, Chile y Argentina bajo la marca Latinoamérica Comparte, y está evaluando llegar a Perú y México. Este año se sumaron más de 15 nuevas empresas a la red. Proyectos destacados: Ecuasal en Ecuador (proceso de transición familiar exitoso) y colegios como J.J. Casas (formación en mentalidad emprendedora en jóvenes). Colombia Comparte fue reconocida por ACRIP como uno de los programas más innovadores en bienestar corporativo en Latinoamérica."
+  },
+  {
+    "id": 20,
+    "seccion": "SECCIÓN 20 - EVENTOS RED QUE TRANSFORMA",
+    "texto": "Los eventos Red que Transforma son espacios de inspiración, aprendizaje y conexión para líderes empresariales, emprendedores y profesionales de toda Latinoamérica. El evento Red que Transforma 2025 reúne en cada país a más de 500 líderes. Fechas 2025: Bogotá, Colombia - 15 de marzo | Quito, Ecuador - 22 de abril | Santiago, Chile - 10 de junio | Buenos Aires, Argentina - 18 de agosto. Cada evento incluye talleres prácticos, networking, alianzas estratégicas y conferencistas internacionales."
+  },
+  {
+    "id": 21,
+    "seccion": "SECCIÓN 21 - TESTIMONIOS DE EMPRENDEDORES",
+    "texto": "Viviana Lobo (Toxal Natural): Colombia Comparte la ayudó a organizar su emprendimiento y su vida. Pasó por una situación complicada y la apoyaron con mentores y coaches muy especiales.\n\nDiana Galindo (Galindo Art): Encontró formación, mentores de alta calidad humana y una comunidad de emprendedores. Logró formalización y estructura empresarial, y describe a la fundación como una familia de emprendimiento.\n\nNeli Pantja (Comparte Academia): Nunca pensó que iba a emprender, pero el programa le enseñó finanzas, mercadeo, marketing y gestión empresarial. Agradece el acompañamiento emocional para no sentirse sola en el proceso."
+  },
+  {
+    "id": 22,
+    "seccion": "SECCIÓN 22 - EQUIPO",
+    "texto": "Los cofundadores de Colombia Comparte son Carolina Ruiz Herrera y Eduardo Del Castillo. El equipo cuenta con más de 65 mentores y voluntarios especializados en emprendimiento, finanzas, marketing, ventas, gestión empresarial y desarrollo humano. Es una comunidad enfocada en transformar vidas, familias, empresas y comunidades."
+  },
+  {
+    "id": 23,
+    "seccion": "SECCIÓN 23 - CONTACTO COMPLETO",
+    "texto": "Ubicación: Bogotá, Colombia. Teléfono: 316 467 3087. Sitio web: colombiacomparte.com. Canal YouTube: youtube.com/@colombiacomparte. Correo: Eduardodelcastillo@colombiacomparte.com. Inscripción a Comparte Academia (antes EDIFICA): https://colombiacomparte.com/programa-edifica/. Naturaleza: Organización Sin Ánimo de Lucro. Banco: Bancolombia, Cuenta de ahorros, Número: 084-000103-67, A nombre de: Fundación Colombia Comparte, NIT: 901.213.196-8.\n\n===========================================================================================\nFIN DEL DOCUMENTO BASE RAG - COLOMBIA COMPARTE / LATINOAMÉRICA COMPARTE 2026\n==========================================================================================="
+  }
+]
