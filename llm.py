@@ -88,16 +88,45 @@ def formatear_contexto(resultados):
 def construir_prompt(query, contexto):
     system = (
         "Eres el asistente virtual oficial de Colombia Comparte / Latinoamérica Comparte. "
-        "Tu única fuente de información es el contexto proporcionado. "
-        "Reglas estrictas:\n"
-        "- Responde SOLO con información del contexto. NUNCA inventes datos.\n"
-        "- Si la respuesta no está en el contexto, di exactamente: "
+        "Tu única fuente de información es el CONTEXTO que se te proporciona abajo. "
+        "REGLAS ABSOLUTAS — violarlas es un error grave:\n"
+        "1. PROHIBIDO inventar, asumir o inferir cualquier dato que no esté textualmente en el contexto. "
+        "Esto incluye precios, costos, valores, fechas no mencionadas o cualquier número no presente.\n"
+        "2. Si la pregunta toca algo que NO aparece en el contexto, responde ÚNICAMENTE con esta frase exacta: "
         "'No tengo suficiente información para responder esa pregunta con los datos disponibles.'\n"
-        "- Responde siempre en español, de forma clara, directa y amable.\n"
-        "- No menciones que tienes un 'contexto' o 'documento'; habla naturalmente."
+        "3. Si el contexto no menciona precios ni costos, NO menciones precios ni costos.\n"
+        "4. Responde en español, de forma clara y amable.\n"
+        "5. No menciones 'contexto', 'documento' ni 'sección' en tu respuesta."
     )
-    user = f"Contexto:\n{contexto}\n\nPregunta: {query}"
+    user = (
+        f"CONTEXTO:\n{contexto}\n\n"
+        f"PREGUNTA: {query}\n\n"
+        f"Responde basándote SOLO en el CONTEXTO de arriba. "
+        f"Si la información no está en el contexto, usa la frase de fallback exacta."
+    )
     return system, user
+
+
+# 4b. VERIFICACIÓN POST-GENERACIÓN ANTI-ALUCINACIÓN
+PALABRAS_RIESGO = [
+    # precios inventados
+    "$", "usd", "cop", "costo", "precio", "vale", "gratis", "gratuito", "pago",
+    # datos de contacto inventados
+    "@gmail", "@hotmail", "@yahoo",
+    # ubicaciones inventadas
+    "medellín", "cali", "barranquilla", "cartagena",
+]
+
+def verificar_alucinacion(respuesta, contexto):
+    """
+    Detecta si la respuesta menciona datos que NO están en el contexto.
+    Retorna (es_alucinacion: bool, razon: str)
+    """
+    resp_lower = contexto.lower()
+    for palabra in PALABRAS_RIESGO:
+        if palabra in respuesta.lower() and palabra not in resp_lower:
+            return True, f"dato no presente en contexto: '{palabra}'"
+    return False, ""
 
 
 # 5. GENERAR RESPUESTA
@@ -147,6 +176,12 @@ def generate_answer(query, embed_model, index, chunks, tokenizer, model, device)
 
     # Limpiar texto repetido o artefactos
     respuesta = limpiar_respuesta(respuesta, query)
+
+    # Verificación post-generación anti-alucinación
+    es_aluc, razon = verificar_alucinacion(respuesta, contexto)
+    if es_aluc:
+        print(f"   🛡️  Alucinación bloqueada ({razon})")
+        respuesta = "No tengo suficiente información para responder esa pregunta con los datos disponibles."
 
     return respuesta, resultados
 
