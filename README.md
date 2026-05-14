@@ -1,12 +1,12 @@
 # 🤖 RAG Colombia Comparte
 
-Un sistema completo de **Retrieval-Augmented Generation (RAG)** para responder preguntas sobre el programa **Colombia Comparte** usando búsqueda semántica e IA generativa.
+Un sistema completo de **Retrieval-Augmented Generation (RAG)** para responder preguntas sobre el programa **Colombia Comparte** usando búsqueda semántica e IA generativa, con **API REST** consumible.
 
 ---
 
 ## 📋 Descripción General
 
-Este proyecto implementa un pipeline RAG de 3 etapas:
+Este proyecto implementa un pipeline RAG de 3 etapas + API:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -23,6 +23,12 @@ Este proyecto implementa un pipeline RAG de 3 etapas:
 │ SEMANA 3: GENERACIÓN CON LLM                               │
 │ Respuesta: contexto + query → LLM → respuesta en español   │
 └─────────────────────────────────────────────────────────────┘
+                            ↓
+┌─────────────────────────────────────────────────────────────┐
+│ API REST (FastAPI)                                          │
+│ Endpoints: GET / GET /health | POST /preguntar            │
+│ CORS habilitado → consumible desde cualquier cliente       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -38,6 +44,7 @@ sentence-transformers        # Embeddings multilingües
 faiss-cpu / faiss-gpu        # Búsqueda vectorial
 transformers                  # Cargar LLMs
 torch / torch-cuda            # Backend de IA
+fastapi + uvicorn             # API REST
 numpy                          # Álgebra lineal
 ```
 
@@ -71,10 +78,13 @@ pip install transformers accelerate torch
 ```
 .
 ├── README.md                              # Este archivo
+├── requirements.txt                       # Dependencias
+│
 ├── rag.py                                 # SEMANA 1: Preparación de datos
 ├── retrieval.py                           # SEMANA 2: Motor de búsqueda
 ├── llm.py                                 # SEMANA 3: Generación con IA
-├── requirements.txt                       # Dependencias
+├── api.py                                 # API REST (FastAPI)
+│
 ├── rag_logs.log                           # Log de ejecución (auto-generado)
 ├── data/
 │   ├── Colombia_Comparte_BASE_RAG_FINAL.txt  # Archivo de entrada (tu dato)
@@ -164,6 +174,134 @@ Respuesta: Colombia Comparte es un programa que...
 
 ---
 
+## 🌐 API REST (FastAPI)
+
+### Iniciar servidor
+
+```bash
+# Asegúrate de haber completado SEMANA 1 primero
+python rag.py  # Genera index.faiss y chunks.json
+
+# Iniciar API
+python api.py
+# O con reload automático:
+# uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+```
+
+**API disponible en:**
+- Base URL: `http://localhost:8000`
+- Swagger UI: `http://localhost:8000/docs` ← Interfaz interactiva
+- ReDoc: `http://localhost:8000/redoc`
+
+### Endpoints
+
+#### 1. **GET /** — Status de la API
+
+```bash
+curl http://localhost:8000/
+```
+
+**Respuesta:**
+```json
+{
+  "status": "ok",
+  "mensaje": "API RAG Colombia Comparte activa",
+  "uso": "POST /preguntar con body { 'pregunta': 'tu pregunta aquí' }",
+  "docs": "/docs"
+}
+```
+
+#### 2. **GET /health** — Health check
+
+```bash
+curl http://localhost:8000/health
+```
+
+**Respuesta:**
+```json
+{
+  "status": "ok",
+  "chunks_cargados": 45,
+  "vectores_faiss": 45,
+  "dispositivo": "cuda"
+}
+```
+
+#### 3. **POST /preguntar** — Hacer pregunta (⭐ Principal)
+
+```bash
+curl -X POST http://localhost:8000/preguntar \
+  -H "Content-Type: application/json" \
+  -d '{"pregunta": "¿Qué es Colombia Comparte?"}'
+```
+
+**Request:**
+```json
+{
+  "pregunta": "¿Cómo me inscribo al programa EDIFICA?"
+}
+```
+
+**Response:**
+```json
+{
+  "pregunta": "¿Cómo me inscribo al programa EDIFICA?",
+  "respuesta": "Para inscribirse al programa EDIFICA, debe...",
+  "fuentes": [
+    {
+      "seccion": "SECCIÓN 5 - EDIFICA",
+      "score": 0.8234
+    },
+    {
+      "seccion": "SECCIÓN 3 - Inscripción",
+      "score": 0.7561
+    }
+  ],
+  "chunks_encontrados": 2
+}
+```
+
+### Características de la API
+
+✅ **Anti-alucinación:** Valida que las respuestas se basen en el contexto  
+✅ **Fallback inteligente:** Si no hay contexto, responde con mensaje genérico  
+✅ **CORS habilitado:** Consumible desde frontend/apps  
+✅ **Validación:** Max 500 caracteres por pregunta  
+✅ **Carga lenta:** Los modelos se cargan una sola vez al iniciar  
+
+### Usar desde Postman
+
+1. Abre Postman
+2. **New Request** → POST
+3. URL: `http://localhost:8000/preguntar`
+4. Tab **Body** → raw → JSON
+5. Ingresa:
+   ```json
+   {
+     "pregunta": "¿Cuál es la misión de Colombia Comparte?"
+   }
+   ```
+6. Click **Send**
+
+### Usar desde JavaScript/Frontend
+
+```javascript
+const pregunta = "¿Qué es Comparte Academia?";
+
+fetch('http://localhost:8000/preguntar', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ pregunta })
+})
+  .then(r => r.json())
+  .then(data => {
+    console.log(data.respuesta);
+    console.log('Fuentes:', data.fuentes);
+  });
+```
+
+---
+
 ## ⚙️ Configuración
 
 Puedes ajustar estos parámetros en cada archivo:
@@ -185,6 +323,17 @@ TOP_K = 3                    # Número de chunks a recuperar
 MAX_NEW_TOKENS = 250         # Máximo tokens en respuesta
 TEMPERATURE = 0.2            # Creatividad (0=determinístico, 1=creativo)
 TOP_P = 0.85                 # Nucleus sampling
+```
+
+### `api.py`
+```python
+TOP_K = 3                    # Chunks a recuperar por pregunta
+MIN_SCORE = 0.20             # Score mínimo de similitud
+MAX_NEW_TOKENS = 250         # Máximo tokens en respuesta
+TEMPERATURE = 0.2            # Creatividad
+TOP_P = 0.85                 # Nucleus sampling
+FALLBACK = "No tengo suficiente..."  # Mensaje si no hay contexto
+PALABRAS_RIESGO = [...]      # Palabras que trigguean anti-alucinación
 ```
 
 ---
@@ -260,13 +409,20 @@ python rag.py
 python retrieval.py
 # → Verifica que la búsqueda funcione
 
-# 4. SEMANA 3: Conversar con IA
+# 4. SEMANA 3: Conversar con IA (terminal interactiva)
 python llm.py
 # → Ingresa preguntas y recibe respuestas con contexto
 
-# 5. Ver logs
+# 5. ALTERNATIVA: Usar API REST (mejor para producción)
+python api.py
+# → API disponible en http://localhost:8000/docs
+
+# 6. Ver logs
 type rag_logs.log
 ```
+
+**Opción recomendada:** Usar **API** para integrar en aplicaciones  
+**Opción para desarrollo:** Usar **llm.py** para debugging
 
 ---
 
@@ -297,4 +453,4 @@ Para preguntas sobre Colombia Comparte, consulta: www.colombiacomparte.org
 ---
 
 **Última actualización:** Mayo 2026  
-**Versión:** 3.0 (SEMANA 3 - RAG Completo)
+**Versión:** 4.0 (API REST + SEMANA 3 - RAG Completo)
