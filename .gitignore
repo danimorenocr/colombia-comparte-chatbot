@@ -1,0 +1,50 @@
+# .gitignore for Colombia Comparte chatbot (Python + local data)
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Logs
+logs/
+*.log
+
+# Data, DBs and indexes (may be large or generated)
+data/
+chroma_db/
+*.sqlite3
+index.faiss
+chunks.json
+
+# Model / cache files
+transformers_cache/
+huggingface/
+cache/
+torch_cache/
+*.pt
+*.pth
+
+# Environment variables
+.env
+.env.local
+
+# IDEs and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/

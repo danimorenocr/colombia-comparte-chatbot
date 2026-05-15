@@ -1,12 +1,15 @@
 # Dependencias del proyecto RAG Colombia Comparte
 
 # Embeddings y búsqueda vectorial
-sentence-transformers==2.2.2
+sentence-transformers==2.7.0
 faiss-cpu==1.7.4
 
+# Core ML / NumPy
+numpy==1.26.4
+
 # Modelos y generación
-transformers==4.35.2
-torch==2.0.1
+transformers==4.41.2
+torch==2.2.2
 accelerate==0.24.1
 
 # API REST

@@ -6,12 +6,15 @@
 import json
 import numpy as np
 import faiss
+from pathlib import Path
 from sentence_transformers import SentenceTransformer
 
 # ── CONFIG ──────────────────────────────────────────────────
 MODELO_EMBED  = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-CHUNKS_JSON   = "data/chunks.json"
-INDEX_FAISS   = "data/index.faiss"
+BASE_DIR      = Path(__file__).resolve().parent
+DATA_DIR      = BASE_DIR.parent / "data"
+CHUNKS_JSON   = str(DATA_DIR / "chunks.json")
+INDEX_FAISS   = str(DATA_DIR / "index.faiss")
 TOP_K         = 3
 MIN_SCORE     = 0.20   # más bajo para no filtrar preguntas de contacto/datos
 # ────────────────────────────────────────────────────────────

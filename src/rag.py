@@ -9,8 +9,15 @@ import json
 import logging
 import numpy as np
 import faiss
+from pathlib import Path
 from sentence_transformers import SentenceTransformer
 from datetime import datetime
+
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = BASE_DIR.parent
+DATA_DIR = PROJECT_DIR / "data"
+LOGS_DIR = PROJECT_DIR / "logs"
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── CONFIGURAR LOGGING ──────────────────────────────────────
 logging.basicConfig(
@@ -18,17 +25,17 @@ logging.basicConfig(
     format='[%(asctime)s] %(levelname)-8s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S',
     handlers=[
-        logging.FileHandler("rag_logs.log"),
+        logging.FileHandler(str(LOGS_DIR / "rag_logs.log")),
         logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
 
 # ── CONFIG ──────────────────────────────────────────────────
-ARCHIVO_TXT   = "data/Colombia_Comparte_BASE_RAG_v2.txt"
+ARCHIVO_TXT   = str(DATA_DIR / "Colombia_Comparte_BASE_RAG_v2.txt")
 MODELO_EMBED  = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-CHUNKS_JSON   = "data/chunks.json"
-INDEX_FAISS   = "data/index.faiss"
+CHUNKS_JSON   = str(DATA_DIR / "chunks.json")
+INDEX_FAISS   = str(DATA_DIR / "index.faiss")
 TOP_K         = 3          # cuántos chunks devolver por búsqueda
 # ────────────────────────────────────────────────────────────
 
@@ -191,8 +198,8 @@ if __name__ == "__main__":
     logger.info("╚" + "═" * 58 + "╝")
     
     try:
-        os.makedirs("data", exist_ok=True)
-        logger.info("✅ Directorio 'data' verificado/creado")
+        os.makedirs(DATA_DIR, exist_ok=True)
+        logger.info(f"✅ Directorio 'data' verificado/creado: {DATA_DIR}")
 
         logger.info("\n📖 PASO 1: Cargando texto...")
         texto = cargar_texto(ARCHIVO_TXT)
