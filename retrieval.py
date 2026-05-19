@@ -132,7 +132,7 @@ def evaluar_retrieval(modelo, index, chunks):
 # 5. ANÁLISIS DE CASOS BORDE
 def analizar_fallas(modelo, index, chunks):
     preguntas = [
-        "¿Tienen sede en Medellín?",
+        "¿Testimonios?",
         "¿El programa es gratis?",
         "¿Cuánto dura ESTRUCTURA?",
         "¿Qué es Latinoamérica Comparte?",

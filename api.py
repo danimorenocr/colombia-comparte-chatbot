@@ -5,12 +5,15 @@
 from dotenv import load_dotenv
 import os
 import json
+import logging
+from datetime import datetime, timezone
 import faiss
 from groq import Groq
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
+from supabase import create_client
 
 try:
     from langdetect import detect, LangDetectException
@@ -28,6 +31,12 @@ INDEX_FAISS   = "data/index.faiss"
 TOP_K         = 3
 MIN_SCORE     = 0.20
 GROQ_MODEL    = "llama-3.1-8b-instant"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] %(levelname)s %(name)s - %(message)s'
+)
+logger = logging.getLogger("colombia_comparte_api")
 
 FALLBACK = {
     "es": "No tengo suficiente información para responder esa pregunta con los datos disponibles.",
@@ -60,6 +69,11 @@ CTA = {
         "👉 [Contact us here](https://colombiacomparte.com/contacto)"
     ),
 }
+
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supa = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ────────────────────────────────────────────────────────────
 
 
@@ -101,8 +115,9 @@ app.add_middleware(
 # ── SCHEMAS ──────────────────────────────────────────────────
 class PreguntaRequest(BaseModel):
     message: str
+    session_id: str | None = None
     country: str | None = None
-    language: str | None = "es"
+    language: str | None = None
     action: str | None = None
     history: list[dict] | None = []
 
@@ -129,18 +144,66 @@ class RespuestaResponse(BaseModel):
     chunks_encontrados: int = 0
     idioma_detectado: str = "es"
     es_lead: bool = False
+    session_id: str | None = None
 # ─────────────────────────────────────────────────────────────
 
 
 # ── HELPERS ──────────────────────────────────────────────────
-def detectar_idioma(texto: str, fallback_lang: str = "es") -> str:
+def crear_sesion(country: str | None, language: str | None) -> str:
+    """Crea una sesión nueva y retorna el session_id."""
+    logger.info("Creating session country=%s language=%s", country, language)
+    res = supa.table("sessions").insert({
+        "country": country,
+        "language": language or "es",
+    }).execute()
+    return res.data[0]["id"]
+
+
+def guardar_mensaje(session_id: str, role: str, content: str, is_lead: bool = False):
+    supa.table("messages").insert({
+        "session_id": session_id,
+        "role": role,
+        "content": content,
+        "is_lead": is_lead,
+    }).execute()
+    supa.table("sessions").update({
+        "last_active": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", session_id).execute()
+
+
+def cargar_historial(session_id: str, ultimos_n: int = 6) -> list[dict]:
+    """Trae los últimos N mensajes como lista {role, content}."""
+    res = (
+        supa.table("messages")
+        .select("role, content")
+        .eq("session_id", session_id)
+        .order("created_at", desc=True)
+        .limit(ultimos_n)
+        .execute()
+    )
+    return list(reversed(res.data))
+
+
+def detectar_idioma(texto: str, fallback_lang: str | None = None) -> str:
+    # 1. Autodetectar primero desde el contenido real del mensaje
     if LANGDETECT_AVAILABLE and texto and len(texto.split()) >= 2:
         try:
             detected = detect(texto)
-            return "en" if detected == "en" else "es"
+            if detected in ["en", "es"]:
+                return detected
         except LangDetectException:
             pass
-    return "en" if (fallback_lang or "").lower().startswith("en") else "es"
+
+    # 2. Si la autodetección falla, usar preferencia explícita del usuario si existe
+    if fallback_lang:
+        lang_lower = fallback_lang.lower().strip()
+        if lang_lower.startswith("en"):
+            return "en"
+        if lang_lower.startswith("es"):
+            return "es"
+
+    # 3. Fallback final
+    return "es"
 
 
 def es_intencion_negocio(texto: str) -> bool:
@@ -292,12 +355,27 @@ def health():
 def preguntar(body: PreguntaRequest):
     pregunta = body.message.strip()
 
+    logger.info(
+        "Incoming request action=%s country=%s language=%s session_id=%s history_len=%s message=%r",
+        body.action,
+        body.country,
+        body.language,
+        body.session_id,
+        len(body.history or []),
+        pregunta,
+    )
+
     if not pregunta and body.action != "initial":
         raise HTTPException(status_code=400, detail="El campo 'message' no puede estar vacío.")
 
+    session_id = body.session_id
+    if not session_id:
+        session_id = crear_sesion(body.country, body.language)
+
     # ── Saludo inicial personalizado por país ──
     if body.action == "initial":
-        lang = detectar_idioma("", fallback_lang=body.language or "es")
+        lang = detectar_idioma("", fallback_lang=body.language) or "es"
+        logger.info("Initial message resolved language=%s", lang)
         country_label = body.country or ("Colombia" if lang == "es" else "your country")
 
         # Nombre de la plataforma según el país
@@ -320,21 +398,28 @@ def preguntar(body: PreguntaRequest):
                 f"¡cuéntame sobre tu emprendimiento o hazme cualquier pregunta!"
             )
 
-        return RespuestaResponse(reply=saludo, idioma_detectado=lang)
+        guardar_mensaje(session_id, "assistant", saludo)
+        return RespuestaResponse(reply=saludo, idioma_detectado=lang, session_id=session_id)
 
     if len(pregunta) > 500:
         raise HTTPException(status_code=400, detail="La pregunta no puede superar 500 caracteres.")
 
-    lang = detectar_idioma(pregunta, fallback_lang=body.language or "es")
+    lang = detectar_idioma(pregunta, fallback_lang=body.language)
     lead = es_intencion_negocio(pregunta)
+    logger.info("Detected language=%s lead=%s", lang, lead)
 
     resultados = retrieve(pregunta)
+    logger.info("Retrieve results count=%s", len(resultados))
+    history = cargar_historial(session_id, ultimos_n=6)
 
     if not resultados:
         reply = FALLBACK.get(lang, FALLBACK["es"])
         if lead:
             reply += CTA[lang]
-        return RespuestaResponse(reply=reply, idioma_detectado=lang, es_lead=lead)
+        logger.info("Returning fallback response language=%s lead=%s", lang, lead)
+        guardar_mensaje(session_id, "user", pregunta, is_lead=lead)
+        guardar_mensaje(session_id, "assistant", reply, is_lead=lead)
+        return RespuestaResponse(reply=reply, idioma_detectado=lang, es_lead=lead, session_id=session_id)
 
     contexto = formatear_contexto(resultados)
 
@@ -344,7 +429,7 @@ def preguntar(body: PreguntaRequest):
             contexto=contexto,
             lang=lang,
             es_lead=lead,
-            history=body.history or [],
+            history=history,
             country=body.country,
         )
     except Exception as e:
@@ -354,7 +439,12 @@ def preguntar(body: PreguntaRequest):
     if lead and "http" not in respuesta:
         respuesta += CTA[lang]
 
+    logger.info("Returning response language=%s lead=%s fuentes=%s", lang, lead, len(resultados))
+
     fuentes = [FuenteItem(seccion=r["seccion"], score=r["score"]) for r in resultados]
+
+    guardar_mensaje(session_id, "user", pregunta, is_lead=lead)
+    guardar_mensaje(session_id, "assistant", respuesta, is_lead=lead)
 
     return RespuestaResponse(
         reply=respuesta,
@@ -362,6 +452,7 @@ def preguntar(body: PreguntaRequest):
         chunks_encontrados=len(resultados),
         idioma_detectado=lang,
         es_lead=lead,
+        session_id=session_id,
     )
 
 
