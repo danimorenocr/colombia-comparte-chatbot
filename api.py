@@ -1,5 +1,5 @@
 # ============================================================
-# API RAG - Colombia Comparte (v3 — Groq + Lead Conversion)
+# API RAG - Colombia Comparte (v3 — Groq + Lead Conversion + Country)
 # pip install fastapi uvicorn sentence-transformers faiss-cpu groq langdetect
 # ============================================================
 from dotenv import load_dotenv
@@ -27,7 +27,7 @@ CHUNKS_JSON   = "data/chunks.json"
 INDEX_FAISS   = "data/index.faiss"
 TOP_K         = 3
 MIN_SCORE     = 0.20
-GROQ_MODEL    = "llama-3.1-8b-instant"  
+GROQ_MODEL    = "llama-3.1-8b-instant"
 
 FALLBACK = {
     "es": "No tengo suficiente información para responder esa pregunta con los datos disponibles.",
@@ -64,20 +64,20 @@ CTA = {
 
 
 # ── STARTUP ─────────────────────────────────────────────────
-print("⏳ Iniciando API RAG Colombia Comparte v3 (Groq)...")
+print("⏳ Iniciando API RAG Colombia Comparte v3 (Groq + Country)...")
 
 embed_model = SentenceTransformer(MODELO_EMBED)
 index = faiss.read_index(INDEX_FAISS)
 
 with open(CHUNKS_JSON, "r", encoding="utf-8") as f:
     chunks = json.load(f)
-#--------------------------------------------------------------------------
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 if not GROQ_API_KEY:
     raise ValueError("No se encontró GROQ_API_KEY en .env")
 
-groq_client = Groq(api_key=GROQ_API_KEY)  # usa GROQ_API_KEY del entorno
+groq_client = Groq(api_key=GROQ_API_KEY)
 
 print("✅ API lista\n")
 # ─────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ print("✅ API lista\n")
 app = FastAPI(
     title="Chatbot RAG — Colombia Comparte",
     description="API para hacer preguntas sobre Colombia Comparte / Latinoamérica Comparte.",
-    version="3.0.0",
+    version="3.1.0",
 )
 app.add_middleware(
     CORSMiddleware,
@@ -110,6 +110,7 @@ class PreguntaRequest(BaseModel):
         json_schema_extra = {
             "example": {
                 "message": "Tengo un emprendimiento de café artesanal, ¿pueden ayudarme?",
+                "country": "Colombia",
                 "language": "es",
                 "action": "chat",
                 "history": []
@@ -174,16 +175,43 @@ def generar(
     lang: str = "es",
     es_lead: bool = False,
     history: list[dict] | None = None,
+    country: str | None = None,
 ) -> str:
 
+    # Contexto de país para el prompt
+    country_ctx_es = (
+        f" El usuario se conecta desde {country}."
+        if country else ""
+    )
+    country_ctx_en = (
+        f" The user is connecting from {country}."
+        if country else ""
+    )
+
+    regla_pais_es = (
+        f"5. PAÍS DEL USUARIO:{country_ctx_es} Si existen regulaciones, trámites, "
+        f"entidades de apoyo, ejemplos o referencias relevantes para ese país "
+        f"(especialmente en el contexto de emprendimiento y comercio en América Latina), "
+        f"mencionarlos cuando aplique. Si no hay información específica del país en el contexto, "
+        f"responde con la información general disponible.\n"
+    ) if country else ""
+
+    regla_pais_en = (
+        f"5. USER'S COUNTRY:{country_ctx_en} If there are relevant regulations, procedures, "
+        f"support entities, examples or references for that country "
+        f"(especially in the context of entrepreneurship and trade in Latin America), "
+        f"mention them when applicable. If no country-specific information is in the context, "
+        f"respond with the general information available.\n"
+    ) if country else ""
+
     regla_lead_es = (
-        "5. El usuario tiene un emprendimiento o necesidad de negocio. "
+        "6. El usuario tiene un emprendimiento o necesidad de negocio. "
         "Identifica cómo los servicios de Colombia Comparte pueden ayudarle específicamente. "
         "Sé concreto y guíalo hacia una acción (registrarse, contactar, postularse).\n"
     ) if es_lead else ""
 
     regla_lead_en = (
-        "5. The user has a business or entrepreneurship need. "
+        "6. The user has a business or entrepreneurship need. "
         "Identify how Colombia Comparte's services can help them specifically. "
         "Be concrete and guide them toward taking action (registering, contacting, applying).\n"
     ) if es_lead else ""
@@ -198,6 +226,7 @@ def generar(
             "2. If information is not in the context, say you don't have that data and suggest contacting the team.\n"
             "3. Respond in English, warmly and concisely (max 3 paragraphs).\n"
             "4. Do NOT use the words 'context', 'document', or 'section'.\n"
+            f"{regla_pais_en}"
             f"{regla_lead_en}"
             f"\nCONTEXT:\n{contexto}"
         )
@@ -211,6 +240,7 @@ def generar(
             "2. Si la información no está en el contexto, dilo y sugiere contactar al equipo.\n"
             "3. Responde en español, de forma cálida y concisa (máximo 3 párrafos).\n"
             "4. NO uses las palabras 'contexto', 'documento' ni 'sección'.\n"
+            f"{regla_pais_es}"
             f"{regla_lead_es}"
             f"\nCONTEXTO:\n{contexto}"
         )
@@ -241,7 +271,7 @@ def generar(
 def root():
     return {
         "status": "ok",
-        "version": "3.0.0 (Groq)",
+        "version": "3.1.0 (Groq + Country)",
         "modelo": GROQ_MODEL,
         "docs": "/docs",
     }
@@ -265,14 +295,31 @@ def preguntar(body: PreguntaRequest):
     if not pregunta and body.action != "initial":
         raise HTTPException(status_code=400, detail="El campo 'message' no puede estar vacío.")
 
-    # Saludo inicial
+    # ── Saludo inicial personalizado por país ──
     if body.action == "initial":
         lang = detectar_idioma("", fallback_lang=body.language or "es")
-        saludo = (
-            "Hi 👋 I'm the virtual assistant for Colombia Comparte. Tell me about your business or ask me anything!"
-            if lang == "en" else
-            "Hola 👋 Soy el asistente de Colombia Comparte. ¡Cuéntame sobre tu emprendimiento o hazme cualquier pregunta!"
-        )
+        country_label = body.country or ("Colombia" if lang == "es" else "your country")
+
+        # Nombre de la plataforma según el país
+        colombia_countries = {"colombia"}
+        if (body.country or "").strip().lower() in colombia_countries:
+            platform_name = "Colombia Comparte"
+        else:
+            platform_name = f"{country_label} Comparte / Latinoamérica Comparte"
+
+        if lang == "en":
+            saludo = (
+                f"Hi 👋 I'm the virtual assistant for {platform_name}. "
+                f"I see you're connecting from {country_label} — "
+                f"tell me about your business or ask me anything!"
+            )
+        else:
+            saludo = (
+                f"Hola 👋 Soy el asistente de {platform_name}. "
+                f"Veo que te conectas desde {country_label} — "
+                f"¡cuéntame sobre tu emprendimiento o hazme cualquier pregunta!"
+            )
+
         return RespuestaResponse(reply=saludo, idioma_detectado=lang)
 
     if len(pregunta) > 500:
@@ -298,6 +345,7 @@ def preguntar(body: PreguntaRequest):
             lang=lang,
             es_lead=lead,
             history=body.history or [],
+            country=body.country,
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Error al llamar a Groq: {str(e)}")
