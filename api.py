@@ -1,10 +1,5 @@
 # ============================================================
 # API RAG - Colombia Comparte
-# FastAPI — consumible desde Postman o cualquier cliente HTTP
-# pip install fastapi uvicorn transformers accelerate sentence-transformers faiss-cpu
-#
-# Correr: uvicorn api:app --host 0.0.0.0 --port 8000 --reload
-# Docs:   http://localhost:8000/docs
 # ============================================================
 
 import json
@@ -15,6 +10,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer, AutoModelForCausalLM
+
+# pip install langdetect
+try:
+    from langdetect import detect, LangDetectException
+    LANGDETECT_AVAILABLE = True
+except ImportError:
+    LANGDETECT_AVAILABLE = False
+    print("⚠️  langdetect no instalado. Usando campo 'language' del body como fallback.")
 
 # ── CONFIG ──────────────────────────────────────────────────
 MODELO_EMBED   = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
@@ -27,27 +30,26 @@ MAX_NEW_TOKENS = 250
 TEMPERATURE    = 0.2
 TOP_P          = 0.85
 
-FALLBACK = "No tengo suficiente información para responder esa pregunta con los datos disponibles."
+FALLBACK = {
+    "es": "No tengo suficiente información para responder esa pregunta con los datos disponibles.",
+    "en": "I don't have enough information to answer that question with the available data.",
+}
+
 PALABRAS_RIESGO = ["$", "usd", "cop", "costo", "precio", "vale", "gratis", "gratuito",
                    "@gmail", "@hotmail", "@yahoo", "medellín", "cali", "barranquilla"]
 # ────────────────────────────────────────────────────────────
 
 
-# ── STARTUP: cargar modelos una sola vez ─────────────────────
+# ── STARTUP ─────────────────────────────────────────────────
 print("⏳ Iniciando API RAG Colombia Comparte...")
 
-print("  → Cargando embeddings...")
 embed_model = SentenceTransformer(MODELO_EMBED)
-
-print("  → Cargando índice FAISS...")
 index = faiss.read_index(INDEX_FAISS)
 
-print("  → Cargando chunks...")
 with open(CHUNKS_JSON, "r", encoding="utf-8") as f:
     chunks = json.load(f)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"  → Cargando LLM en {device}...")
 tokenizer = AutoTokenizer.from_pretrained(MODELO_LLM)
 llm = AutoModelForCausalLM.from_pretrained(
     MODELO_LLM,
@@ -80,22 +82,55 @@ app.add_middleware(
 
 # ── SCHEMAS ──────────────────────────────────────────────────
 class PreguntaRequest(BaseModel):
-    pregunta: str
+    message: str
+    country: str | None = None
+    language: str | None = "es"   # "es" | "en" — usado si langdetect no está disponible
+    action: str | None = None
 
     class Config:
         json_schema_extra = {
-            "example": {"pregunta": "¿Qué es Colombia Comparte?"}
+            "example": {
+                "message": "What is Colombia Comparte?",
+                "country": "Colombia",
+                "language": "en",
+                "action": "chat"
+            }
         }
+
 
 class FuenteItem(BaseModel):
     seccion: str
     score: float
 
+
 class RespuestaResponse(BaseModel):
-    pregunta: str
-    respuesta: str
-    fuentes: list[FuenteItem]
-    chunks_encontrados: int
+    reply: str
+    fuentes: list[FuenteItem] = []
+    chunks_encontrados: int = 0
+    idioma_detectado: str = "es"   # nuevo campo informativo
+# ─────────────────────────────────────────────────────────────
+
+
+# ── DETECCIÓN DE IDIOMA ──────────────────────────────────────
+def detectar_idioma(texto: str, fallback_lang: str = "es") -> str:
+    """
+    Devuelve 'en' o 'es'.
+    Prioridad: langdetect sobre el texto → campo language del body → 'es'.
+    Solo se distingue entre inglés y español; cualquier otro idioma cae a 'es'.
+    """
+    if LANGDETECT_AVAILABLE and texto and len(texto.split()) >= 2:
+        try:
+            detected = detect(texto)
+            if detected == "en":
+                return "en"
+            return "es"
+        except LangDetectException:
+            pass
+
+    # Fallback: usar el campo language que viene en el body
+    if fallback_lang and fallback_lang.lower().startswith("en"):
+        return "en"
+    return "es"
 # ─────────────────────────────────────────────────────────────
 
 
@@ -127,22 +162,42 @@ def verificar_alucinacion(respuesta: str, contexto: str) -> bool:
     return False
 
 
-def generar(query: str, contexto: str) -> str:
-    system = (
-        "Eres el asistente virtual oficial de Colombia Comparte / Latinoamérica Comparte. "
-        "Tu única fuente de información es el CONTEXTO proporcionado. "
-        "REGLAS ABSOLUTAS:\n"
-        "1. PROHIBIDO inventar datos que no estén en el contexto (precios, costos, fechas, ubicaciones).\n"
-        "2. Si la información no está en el contexto responde EXACTAMENTE: "
-        f"'{FALLBACK}'\n"
-        "3. Responde en español, de forma clara y amable.\n"
-        "4. No menciones 'contexto', 'documento' ni 'sección'."
-    )
-    user = (
-        f"CONTEXTO:\n{contexto}\n\n"
-        f"PREGUNTA: {query}\n\n"
-        "Responde basándote SOLO en el CONTEXTO."
-    )
+def generar(query: str, contexto: str, lang: str = "es") -> str:
+    fallback_msg = FALLBACK.get(lang, FALLBACK["es"])
+
+    if lang == "en":
+        system = (
+            "You are the official virtual assistant of Colombia Comparte / Latinoamérica Comparte. "
+            "Your ONLY source of information is the provided CONTEXT. "
+            "ABSOLUTE RULES:\n"
+            "1. FORBIDDEN to invent data not present in the context (prices, costs, dates, locations).\n"
+            "2. If the information is not in the context, respond EXACTLY: "
+            f"'{fallback_msg}'\n"
+            "3. Respond in English, clearly and in a friendly tone.\n"
+            "4. Do NOT mention 'context', 'document', or 'section'."
+        )
+        user = (
+            f"CONTEXT:\n{contexto}\n\n"
+            f"QUESTION: {query}\n\n"
+            "Answer based ONLY on the CONTEXT above."
+        )
+    else:
+        system = (
+            "Eres el asistente virtual oficial de Colombia Comparte / Latinoamérica Comparte. "
+            "Tu única fuente de información es el CONTEXTO proporcionado. "
+            "REGLAS ABSOLUTAS:\n"
+            "1. PROHIBIDO inventar datos que no estén en el contexto (precios, costos, fechas, ubicaciones).\n"
+            "2. Si la información no está en el contexto responde EXACTAMENTE: "
+            f"'{fallback_msg}'\n"
+            "3. Responde en español, de forma clara y amable.\n"
+            "4. No menciones 'contexto', 'documento' ni 'sección'."
+        )
+        user = (
+            f"CONTEXTO:\n{contexto}\n\n"
+            f"PREGUNTA: {query}\n\n"
+            "Responde basándote SOLO en el CONTEXTO."
+        )
+
     messages = [
         {"role": "system", "content": system},
         {"role": "user",   "content": user},
@@ -163,26 +218,23 @@ def generar(query: str, contexto: str) -> str:
     input_len = inputs["input_ids"].shape[1]
     respuesta = tokenizer.decode(outputs[0][input_len:], skip_special_tokens=True).strip()
 
-    # Limpiar artefactos
     lineas = [l for l in respuesta.splitlines() if l.strip()]
     respuesta = "\n".join(lineas)
 
-    # Anti-alucinación
     if not respuesta or len(respuesta) < 10 or verificar_alucinacion(respuesta, contexto):
-        return FALLBACK
+        return fallback_msg
 
     return respuesta
 # ─────────────────────────────────────────────────────────────
 
 
 # ── ENDPOINTS ────────────────────────────────────────────────
-
 @app.get("/")
 def root():
     return {
         "status": "ok",
         "mensaje": "API RAG Colombia Comparte activa",
-        "uso": "POST /preguntar con body { 'pregunta': 'tu pregunta aquí' }",
+        "uso": "POST /preguntar con body { 'message': 'tu pregunta aquí' }",
         "docs": "/docs",
     }
 
@@ -194,46 +246,57 @@ def health():
         "chunks_cargados": len(chunks),
         "vectores_faiss": int(index.ntotal),
         "dispositivo": device,
+        "langdetect": LANGDETECT_AVAILABLE,
     }
 
 
 @app.post("/preguntar", response_model=RespuestaResponse)
 def preguntar(body: PreguntaRequest):
-    pregunta = body.pregunta.strip()
+    pregunta = body.message.strip()
 
-    if not pregunta:
-        raise HTTPException(status_code=400, detail="El campo 'pregunta' no puede estar vacío.")
+    if not pregunta and body.action != "initial":
+        raise HTTPException(status_code=400, detail="El campo 'message' no puede estar vacío.")
+
+    # Mensaje inicial — respetar el language del body
+    if body.action == "initial":
+        lang = detectar_idioma("", fallback_lang=body.language or "es")
+        if lang == "en":
+            saludo = "Hi 👋 I'm the virtual assistant for Colombia Comparte. How can I help you today?"
+        else:
+            saludo = "Hola 👋 Soy el asistente virtual de Colombia Comparte. ¿En qué puedo ayudarte hoy?"
+        return RespuestaResponse(reply=saludo, fuentes=[], chunks_encontrados=0, idioma_detectado=lang)
 
     if len(pregunta) > 500:
         raise HTTPException(status_code=400, detail="La pregunta no puede superar 500 caracteres.")
 
+    # Detectar idioma: primero analiza el texto, luego usa el campo language como fallback
+    lang = detectar_idioma(pregunta, fallback_lang=body.language or "es")
+
     # Retrieval
     resultados = retrieve(pregunta)
 
-    # Sin contexto → fallback directo (sin gastar tokens del LLM)
     if not resultados:
         return RespuestaResponse(
-            pregunta=pregunta,
-            respuesta=FALLBACK,
+            reply=FALLBACK.get(lang, FALLBACK["es"]),
             fuentes=[],
             chunks_encontrados=0,
+            idioma_detectado=lang,
         )
 
-    contexto  = formatear_contexto(resultados)
-    respuesta = generar(pregunta, contexto)
+    contexto = formatear_contexto(resultados)
+    respuesta = generar(pregunta, contexto, lang=lang)
 
     fuentes = [FuenteItem(seccion=r["seccion"], score=r["score"]) for r in resultados]
 
     return RespuestaResponse(
-        pregunta=pregunta,
-        respuesta=respuesta,
+        reply=respuesta,
         fuentes=fuentes,
         chunks_encontrados=len(resultados),
+        idioma_detectado=lang,
     )
 # ─────────────────────────────────────────────────────────────
 
 
-# ── MAIN (desarrollo local) ───────────────────────────────────
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=False)
