@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
 from supabase import create_client
+from analytics_dashboard import render_analytics_dashboard
 
 try:
     from langdetect import detect, LangDetectException
@@ -228,6 +229,41 @@ def retrieve(query: str):
 
 def formatear_contexto(resultados):
     return "\n\n---\n\n".join(f"[{r['seccion']}]\n{r['texto']}" for r in resultados)
+
+def actualizar_resumen(session_id: str, history: list[dict], lang: str):
+    """Actualiza el resumen cada 4+ mensajes (cada 2 rondas)."""
+    if len(history) < 4:
+        print("No se actualiza resumen: menos de 4 mensajes en el historial.")
+        return
+
+    texto_conv = "\n".join(
+        f"{t['role'].upper()}: {t['content']}" for t in history[-8:]  # últimas 4 rondas
+    )
+    prompt = (
+        f"Resume en máximo 3 oraciones lo que el usuario quiere o necesita, "
+        f"basándote en esta conversación. Idioma: {'español' if lang == 'es' else 'English'}.\n\n"
+        f"{texto_conv}"
+    )
+    try:
+        res = groq_client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=150,
+            temperature=0.2,
+        )
+        resumen = res.choices[0].message.content.strip()
+        supa.table("sessions").update(
+            {"summary": resumen}
+        ).eq("id", session_id).execute()
+    except Exception as e:
+        print("Error al actualizar resumen:", e)
+        logger.warning("No se pudo actualizar resumen: %s", e)
+
+def obtener_resumen(session_id: str) -> str | None:
+    res = supa.table("sessions").select("summary").eq("id", session_id).execute()
+    if res.data:
+        return res.data[0].get("summary")
+    return None
 # ─────────────────────────────────────────────────────────────
 
 
@@ -239,6 +275,7 @@ def generar(
     es_lead: bool = False,
     history: list[dict] | None = None,
     country: str | None = None,
+    resumen: str | None = None,
 ) -> str:
 
     # Contexto de país para el prompt
@@ -279,6 +316,14 @@ def generar(
         "Be concrete and guide them toward taking action (registering, contacting, applying).\n"
     ) if es_lead else ""
 
+    resumen_ctx = ""
+    if resumen:
+        resumen_ctx = (
+            f"\n\nCONTEXTO PREVIO DEL USUARIO (resumen de la conversación anterior):\n{resumen}\n"
+            if lang == "es" else
+            f"\n\nPREVIOUS USER CONTEXT (summary of earlier conversation):\n{resumen}\n"
+        )
+
     if lang == "en":
         system = (
             "You are the official virtual assistant of Colombia Comparte / Latinoamérica Comparte, "
@@ -291,7 +336,7 @@ def generar(
             "4. Do NOT use the words 'context', 'document', or 'section'.\n"
             f"{regla_pais_en}"
             f"{regla_lead_en}"
-            f"\nCONTEXT:\n{contexto}"
+            f"{resumen_ctx}\nCONTEXT:\n{contexto}"
         )
     else:
         system = (
@@ -305,7 +350,7 @@ def generar(
             "4. NO uses las palabras 'contexto', 'documento' ni 'sección'.\n"
             f"{regla_pais_es}"
             f"{regla_lead_es}"
-            f"\nCONTEXTO:\n{contexto}"
+            f"{resumen_ctx}\nCONTEXTO:\n{contexto}"
         )
 
     # Historial conversacional (últimas 3 rondas)
@@ -339,6 +384,22 @@ def root():
         "docs": "/docs",
     }
 
+@app.get("/analytics")
+def analytics():
+    leads   = supa.table("analytics_leads_por_pais").select("*").execute().data
+    diaria  = supa.table("analytics_actividad_diaria").select("*").limit(30).execute().data
+    faqs    = supa.table("analytics_preguntas_frecuentes").select("*").execute().data
+    return {"leads_por_pais": leads, "actividad_diaria": diaria, "faqs": faqs}
+
+
+@app.get("/analytics/dashboard")
+def analytics_dashboard():
+    data = analytics()
+    return render_analytics_dashboard(
+        leads=data["leads_por_pais"] or [],
+        diaria=data["actividad_diaria"] or [],
+        faqs=data["faqs"] or [],
+    )
 
 @app.get("/health")
 def health():
@@ -411,6 +472,9 @@ def preguntar(body: PreguntaRequest):
     resultados = retrieve(pregunta)
     logger.info("Retrieve results count=%s", len(resultados))
     history = cargar_historial(session_id, ultimos_n=6)
+    resumen = obtener_resumen(session_id)
+    actualizar_resumen(session_id, history, lang)
+    
 
     if not resultados:
         reply = FALLBACK.get(lang, FALLBACK["es"])
@@ -431,6 +495,7 @@ def preguntar(body: PreguntaRequest):
             es_lead=lead,
             history=history,
             country=body.country,
+            resumen=resumen,
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Error al llamar a Groq: {str(e)}")

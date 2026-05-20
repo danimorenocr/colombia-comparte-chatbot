@@ -1,263 +1,501 @@
-# 🤖 RAG Colombia Comparte
+# Colombia Comparte Backend
 
-Un sistema completo de **Retrieval-Augmented Generation (RAG)** para responder preguntas sobre el programa **Colombia Comparte** usando búsqueda semántica e IA generativa, con **API REST** consumible.
+Backend oficial de **Colombia Comparte / Latinoamérica Comparte** construido con **FastAPI**, **Groq**, **FAISS** y **Supabase**.
+
+Este servicio expone una API RAG para responder preguntas sobre el programa, guardar sesiones y mensajes, detectar intención de negocio, resumir conversaciones y mostrar analíticas operativas desde el propio backend.
 
 ---
 
-## 📋 Descripción General
+## Visión General
 
-Este proyecto implementa un pipeline RAG de 3 etapas + API:
+La arquitectura resuelve cuatro cosas principales:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ SEMANA 1: CHUNKING + EMBEDDINGS + FAISS                    │
-│ Prepara datos: texto → chunks → embeddings → índice        │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ SEMANA 2: MOTOR DE RECUPERACIÓN                            │
-│ Búsqueda semántica: query → embedding → top-k chunks      │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ SEMANA 3: GENERACIÓN CON LLM                               │
-│ Respuesta: contexto + query → LLM → respuesta en español   │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│ API REST (FastAPI)                                          │
-│ Endpoints: GET / GET /health | POST /preguntar            │
-│ CORS habilitado → consumible desde cualquier cliente       │
-└─────────────────────────────────────────────────────────────┘
+1. Recupera contenido relevante desde un índice FAISS construido a partir de los documentos base.
+2. Genera respuestas con Groq usando únicamente el contexto recuperado.
+3. Persiste conversaciones en Supabase para trazabilidad, sesiones y resúmenes.
+4. Expone analíticas y un dashboard HTML rápido para consumo interno.
+
+Flujo simplificado:
+
+```text
+Usuario -> POST /preguntar
+        -> detecta idioma e intención
+        -> busca chunks relevantes en FAISS
+        -> recupera resumen/historial desde Supabase
+        -> genera respuesta con Groq
+        -> guarda mensaje, lead y sesión
+        -> devuelve respuesta + fuentes
 ```
 
 ---
 
-## 🚀 Requisitos
+## Características
 
-- **Python 3.9+**
-- **GPU (opcional pero recomendado para LLM)**
-
-### Dependencias principales:
-```
-sentence-transformers        # Embeddings multilingües
-faiss-cpu / faiss-gpu        # Búsqueda vectorial
-transformers                  # Cargar LLMs
-torch / torch-cuda            # Backend de IA
-fastapi + uvicorn             # API REST
-numpy                          # Álgebra lineal
-```
+- Respuestas RAG con contexto verificado.
+- Soporte multilenguaje: español e inglés.
+- Detección de idioma con `langdetect` y fallback por campo del request.
+- Detección de intención de negocio para activar CTA.
+- Manejo de sesiones y mensajes en Supabase.
+- Resumen conversacional persistido por sesión.
+- Endpoint de analíticas en JSON.
+- Dashboard rápido en HTML desde el backend.
+- CORS habilitado para consumo desde frontend o herramientas externas.
 
 ---
 
-## 📦 Instalación
+## Stack Técnico
 
-### 1. Crear entorno virtual
+### Core
+
+- **FastAPI** para la API.
+- **Uvicorn** como servidor ASGI.
+- **Groq** para la generación de respuestas.
+- **Sentence Transformers** para embeddings multilingües.
+- **FAISS** para búsqueda vectorial.
+- **Supabase** para persistencia de sesiones, mensajes y analíticas.
+
+### Librerías clave
+
+- `python-dotenv`
+- `pydantic`
+- `langdetect`
+- `numpy`
+
+---
+
+## Estructura del Proyecto
+
+```text
+Intento 3/
+├── api.py
+├── analytics_dashboard.py
+├── requirements.txt
+├── README.md
+├── .env
+├── data/
+│   ├── chunks.json
+│   └── index.faiss
+└── .venv/
+```
+
+### Archivos principales
+
+- `api.py`: API principal con endpoints RAG, sesiones, analíticas y lógica de negocio.
+- `analytics_dashboard.py`: renderiza el dashboard HTML.
+- `data/chunks.json`: chunks recuperables para el motor RAG.
+- `data/index.faiss`: índice vectorial de FAISS.
+
+---
+
+## Requisitos
+
+- Python 3.10 o superior.
+- Entorno virtual recomendado.
+- Acceso a Supabase.
+- API key de Groq.
+
+Opcional:
+
+- `langdetect` instalado para mejor detección de idioma.
+
+---
+
+## Variables de Entorno
+
+Crea un archivo `.env` en la raíz del backend con estas variables:
+
+```env
+SUPABASE_URL=tu_url_de_supabase
+SUPABASE_KEY=tu_clave_de_supabase
+GROQ_API_KEY=tu_groq_api_key
+```
+
+### Notas
+
+- `SUPABASE_URL` y `SUPABASE_KEY` son obligatorias para sesiones, mensajes y analíticas.
+- `GROQ_API_KEY` es obligatoria para generar respuestas.
+- Si falta `GROQ_API_KEY`, la aplicación falla al iniciar.
+
+---
+
+## Instalación
+
+### 1. Crear y activar entorno virtual
+
+En Windows:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+En Linux / macOS:
+
 ```bash
 python -m venv .venv
-.venv\Scripts\activate  # En Windows
-# source .venv/bin/activate  # En Linux/Mac
+source .venv/bin/activate
 ```
 
 ### 2. Instalar dependencias
+
 ```bash
 pip install -r requirements.txt
-# O instalar manualmente:
-pip install sentence-transformers faiss-cpu numpy
-pip install transformers accelerate torch
 ```
 
-### 3. Preparar datos
-- Coloca tu archivo de datos en: `data/Colombia_Comparte_BASE_RAG_FINAL.txt`
-- El formato debe tener secciones: `[SECCIÓN 1 - TEMA]`
+### 3. Verificar archivos de datos
+
+Asegúrate de tener:
+
+- `data/chunks.json`
+- `data/index.faiss`
+
+Si no existen, la API no podrá responder porque no tendrá base RAG para recuperar contexto.
 
 ---
 
-## 📁 Estructura de Archivos
+## Ejecución Local
 
-```
-.
-├── README.md                              # Este archivo
-├── requirements.txt                       # Dependencias
-│
-├── rag.py                                 # SEMANA 1: Preparación de datos
-├── retrieval.py                           # SEMANA 2: Motor de búsqueda
-├── llm.py                                 # SEMANA 3: Generación con IA
-├── api.py                                 # API REST (FastAPI)
-│
-├── rag_logs.log                           # Log de ejecución (auto-generado)
-├── data/
-│   ├── Colombia_Comparte_BASE_RAG_FINAL.txt  # Archivo de entrada (tu dato)
-│   ├── chunks.json                           # Chunks en JSON (auto-generado)
-│   └── index.faiss                           # Índice FAISS (auto-generado)
-└── .venv/                                 # Entorno virtual
-```
-
----
-
-## 🔧 Cómo Usar
-
-### **PASO 1: Ejecutar SEMANA 1 (Preparación)**
-
-Genera chunks, embeddings e índice FAISS:
+### Opción recomendada
 
 ```bash
-python rag.py
+uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-**Qué hace:**
-- ✅ Carga el archivo de texto
-- ✅ Divide en chunks por secciones
-- ✅ Genera embeddings multilingües
-- ✅ Crea índice FAISS para búsqueda rápida
-- ✅ Valida búsquedas con ejemplos
-
-**Archivos generados:**
-- `data/chunks.json` — Chunks con metadata
-- `data/index.faiss` — Índice vectorial
-
-**Logs:** Se guardan en `rag_logs.log`
-
----
-
-### **PASO 2: Ejecutar SEMANA 2 (Recuperación)**
-
-Prueba el motor de búsqueda semántica:
+### Alternativa
 
 ```bash
-python retrieval.py
-```
-
-**Qué puedes hacer:**
-- Importar `retrieve_context()` en otros scripts
-- Buscar documentos relevantes por similitud semántica
-- Filtrar resultados por puntuación mínima
-
-**Ejemplo:**
-```python
-from retrieval import cargar_sistema, retrieve_context
-
-modelo, index, chunks = cargar_sistema()
-resultados = retrieve_context("¿Cómo me inscribo?", modelo, index, chunks)
-
-for r in resultados:
-    print(f"[{r['score']}] {r['seccion']}")
-    print(f"  {r['texto'][:200]}...")
-```
-
----
-
-### **PASO 3: Ejecutar SEMANA 3 (Generación)**
-
-Genera respuestas con LLM usando el contexto recuperado:
-
-```bash
-python llm.py
-```
-
-**Qué hace:**
-- 🤖 Carga modelo de embeddings + índice FAISS + chunks
-- 🧠 Carga LLM (Qwen2.5-0.5B-Instruct)
-- 💬 Acepta preguntas del usuario
-- 🔍 Busca contexto relevante
-- 📝 Genera respuestas basadas en contexto
-
-**Ejemplo de interacción:**
-```
-> ¿Qué es Colombia Comparte?
-
-[Contexto recuperado: 3 chunks relevantes]
-[LLM generando respuesta...]
-
-Respuesta: Colombia Comparte es un programa que...
-```
-
----
-
-## 🌐 API REST (FastAPI)
-
-### Iniciar servidor
-
-```bash
-# Asegúrate de haber completado SEMANA 1 primero
-python rag.py  # Genera index.faiss y chunks.json
-
-# Iniciar API
 python api.py
-# O con reload automático:
-# uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-**API disponible en:**
-- Base URL: `http://localhost:8000`
-- Swagger UI: `http://localhost:8000/docs` ← Interfaz interactiva
+### URLs útiles
+
+- API raíz: `http://localhost:8000`
+- Swagger: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
+- Analíticas JSON: `http://localhost:8000/analytics`
+- Dashboard HTML: `http://localhost:8000/analytics/dashboard`
 
-### Endpoints
+---
 
-#### 1. **GET /** — Status de la API
+## Endpoints
+
+## `GET /`
+
+Estado básico de la API.
+
+### Ejemplo
 
 ```bash
 curl http://localhost:8000/
 ```
 
-**Respuesta:**
+### Respuesta esperada
+
 ```json
 {
   "status": "ok",
-  "mensaje": "API RAG Colombia Comparte activa",
-  "uso": "POST /preguntar con body { 'pregunta': 'tu pregunta aquí' }",
+  "version": "3.1.0 (Groq + Country)",
+  "modelo": "llama-3.1-8b-instant",
   "docs": "/docs"
 }
 ```
 
-#### 2. **GET /health** — Health check
+---
 
-```bash
-curl http://localhost:8000/health
-```
+## `GET /health`
 
-**Respuesta:**
+Health check técnico para validar carga de datos y motor.
+
+### Respuesta incluye
+
+- cantidad de chunks cargados
+- total de vectores en FAISS
+- nombre del modelo LLM
+- estado de disponibilidad de `langdetect`
+
+---
+
+## `POST /preguntar`
+
+Endpoint principal del chatbot.
+
+### Body
+
 ```json
 {
-  "status": "ok",
-  "chunks_cargados": 45,
-  "vectores_faiss": 45,
-  "dispositivo": "cuda"
+  "message": "Tengo un emprendimiento de café, ¿me pueden ayudar?",
+  "session_id": null,
+  "country": "Colombia",
+  "language": "es",
+  "action": "chat",
+  "history": []
 }
 ```
 
-#### 3. **POST /preguntar** — Hacer pregunta (⭐ Principal)
+### Campos
 
-```bash
-curl -X POST http://localhost:8000/preguntar \
-  -H "Content-Type: application/json" \
-  -d '{"pregunta": "¿Qué es Colombia Comparte?"}'
-```
+- `message`: pregunta del usuario.
+- `session_id`: identificador de sesión existente, opcional.
+- `country`: país desde el que se conecta el usuario.
+- `language`: preferencia de idioma del usuario.
+- `action`: puede ser `chat` o `initial`.
+- `history`: historial opcional de conversación.
 
-**Request:**
+### Comportamiento
+
+- Si `action = "initial"`, devuelve un saludo personalizado.
+- Si `message` supera 500 caracteres, devuelve `400`.
+- Si no hay resultados RAG, responde con fallback y CTA si detecta negocio.
+- Si sí hay resultados, llama a Groq con contexto + historial + resumen.
+- Guarda mensajes en Supabase.
+
+### Respuesta
+
 ```json
 {
-  "pregunta": "¿Cómo me inscribo al programa EDIFICA?"
-}
-```
-
-**Response:**
-```json
-{
-  "pregunta": "¿Cómo me inscribo al programa EDIFICA?",
-  "respuesta": "Para inscribirse al programa EDIFICA, debe...",
+  "reply": "...",
   "fuentes": [
     {
-      "seccion": "SECCIÓN 5 - EDIFICA",
-      "score": 0.8234
-    },
-    {
-      "seccion": "SECCIÓN 3 - Inscripción",
-      "score": 0.7561
+      "seccion": "...",
+      "score": 0.82
     }
   ],
-  "chunks_encontrados": 2
+  "chunks_encontrados": 3,
+  "idioma_detectado": "es",
+  "es_lead": true,
+  "session_id": "..."
+}
+```
+
+---
+
+## `GET /analytics`
+
+Devuelve las analíticas en JSON desde Supabase.
+
+### Respuesta
+
+```json
+{
+  "leads_por_pais": [],
+  "actividad_diaria": [],
+  "faqs": []
+}
+```
+
+### Tablas consultadas
+
+- `analytics_leads_por_pais`
+- `analytics_actividad_diaria`
+- `analytics_preguntas_frecuentes`
+
+---
+
+## `GET /analytics/dashboard`
+
+Dashboard HTML renderizado desde el backend.
+
+### Incluye
+
+- KPIs principales.
+- Gráfico de leads por país.
+- Gráfico de actividad diaria.
+- Tabla de FAQs más frecuentes.
+
+---
+
+## Lógica del Backend
+
+### Recuperación semántica
+
+El backend usa `SentenceTransformer` para convertir la pregunta del usuario en embedding, luego consulta el índice FAISS y conserva los top-k resultados con score suficiente.
+
+### Generación con Groq
+
+La función `generar()` arma un system prompt que:
+
+- prohíbe inventar datos,
+- fuerza la respuesta en español o inglés,
+- integra contexto de país si existe,
+- integra reglas de lead si detecta intención de negocio,
+- agrega resumen previo de la conversación si existe,
+- añade el contexto RAG al final.
+
+### Memoria conversacional
+
+- Las sesiones se crean en Supabase.
+- Cada mensaje se guarda en `messages`.
+- El endpoint intenta leer un resumen previo desde `sessions.summary`.
+- También actualiza el resumen periódicamente para mantener continuidad.
+
+---
+
+## Esquema de Datos Esperado en Supabase
+
+### `sessions`
+
+Campos usados por el backend:
+
+- `id`
+- `country`
+- `language`
+- `summary`
+- `last_active`
+
+### `messages`
+
+Campos usados por el backend:
+
+- `session_id`
+- `role`
+- `content`
+- `is_lead`
+- `created_at`
+
+### Vistas / tablas de analíticas
+
+El dashboard espera algo equivalente a esto:
+
+- `analytics_leads_por_pais`
+  - `country`
+  - `total_sesiones`
+  - `sesiones_con_lead`
+  - `pct_leads`
+- `analytics_actividad_diaria`
+  - `dia`
+  - `total_mensajes`
+  - `sesiones_unicas`
+- `analytics_preguntas_frecuentes`
+  - `pregunta`
+  - `veces`
+  - `ultima_vez`
+
+Si tus columnas cambian, el dashboard ya intenta tolerar varios nombres, pero lo ideal es mantener este contrato.
+
+---
+
+## Ejemplos de Uso
+
+### Saludo inicial
+
+```json
+{
+  "message": "",
+  "country": "Colombia",
+  "language": "es",
+  "action": "initial",
+  "history": []
+}
+```
+
+### Consulta normal
+
+```json
+{
+  "message": "Tengo una pyme de café artesanal, ¿cómo me pueden orientar?",
+  "country": "Colombia",
+  "language": "es",
+  "action": "chat",
+  "history": []
+}
+```
+
+### Consulta en inglés
+
+```json
+{
+  "message": "I want to grow my startup and need guidance",
+  "country": "Chile",
+  "language": "en",
+  "action": "chat",
+  "history": []
+}
+```
+
+---
+
+## Desarrollo
+
+### Ejecutar con autoreload
+
+```bash
+uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+```
+
+### Ver logs
+
+La aplicación escribe en consola eventos como:
+
+- creación de sesión,
+- idioma detectado,
+- condición de lead,
+- cantidad de resultados recuperados,
+- retorno de fallback,
+- errores de Groq o Supabase.
+
+---
+
+## Resolución de Problemas
+
+### `ValueError: No se encontró GROQ_API_KEY en .env`
+
+Falta la variable `GROQ_API_KEY` o el archivo `.env` no está en la raíz del backend.
+
+### La API no arranca y dice que no encuentra `chunks.json` o `index.faiss`
+
+Faltan los archivos generados por el pipeline RAG. Debes reconstruirlos antes de iniciar el backend.
+
+### `IndentationError` o errores de importación
+
+Normalmente indican un archivo editado con mala indentación. En este proyecto ya se separó el dashboard en `analytics_dashboard.py` para evitar eso.
+
+### El dashboard muestra ceros o `N/D`
+
+Eso suele significar que la tabla o vista de Supabase tiene nombres de columnas distintos a los que espera el backend.
+
+### Supabase devuelve datos vacíos
+
+Revisa:
+
+- credenciales en `.env`,
+- permisos de las tablas/vistas,
+- nombres reales de columnas,
+- RLS si está activo.
+
+---
+
+## Buenas Prácticas Recomendadas
+
+- Mantener el índice FAISS sincronizado con `chunks.json`.
+- No cambiar nombres de columnas en Supabase sin ajustar el backend.
+- Guardar las claves en `.env`, nunca en el código.
+- Revisar los prompts si cambias el dominio o el tono del asistente.
+- Si el dataset crece, evaluar paginación o caché para analíticas.
+
+---
+
+## Roadmap Sugerido
+
+- Filtros por país y rango de fechas en el dashboard.
+- Exportación CSV/Excel desde `/analytics/dashboard`.
+- Autenticación simple para proteger las analíticas.
+- Endpoint para reconstruir el índice FAISS.
+- Métricas de calidad de respuesta y tasa de lead.
+- Cacheo de consultas frecuentes a Supabase.
+
+---
+
+## Licencia
+
+Este proyecto pertenece a Colombia Comparte / Latinoamérica Comparte. Ajusta esta sección según el uso final o la política de tu organización.
+
+---
+
+## Autor
+
+Backend RAG para Colombia Comparte.
+
+Si quieres, el siguiente paso es dejar este README con un tono más corporativo o más académico según la entrega final.
 }
 ```
 
