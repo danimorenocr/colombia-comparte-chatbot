@@ -117,7 +117,6 @@ def preguntar(body: PreguntaRequest):
     logger.info("Retrieve results count=%s", len(resultados))
     history = cargar_historial(session_id, ultimos_n=6)
     resumen = obtener_resumen(session_id)
-    actualizar_resumen(session_id, history, lang)
 
     if not resultados:
         from app.core import FALLBACK, CTA
@@ -127,6 +126,8 @@ def preguntar(body: PreguntaRequest):
         logger.info("Returning fallback response language=%s lead=%s", lang, lead)
         guardar_mensaje(session_id, "user", pregunta, is_lead=lead)
         guardar_mensaje(session_id, "assistant", reply, is_lead=lead)
+        history_actualizado = cargar_historial(session_id, ultimos_n=6)
+        actualizar_resumen(session_id, history_actualizado, lang)
         return RespuestaResponse(reply=reply, idioma_detectado=lang, es_lead=lead, session_id=session_id)
 
     contexto = formatear_contexto(resultados)
@@ -154,6 +155,8 @@ def preguntar(body: PreguntaRequest):
 
     guardar_mensaje(session_id, "user", pregunta, is_lead=lead)
     guardar_mensaje(session_id, "assistant", respuesta, is_lead=lead)
+    history_actualizado = cargar_historial(session_id, ultimos_n=6)
+    actualizar_resumen(session_id, history_actualizado, lang)
 
     return RespuestaResponse(
         reply=respuesta,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from unittest import result
 
 from app.core import (
     CTA,
@@ -103,8 +104,8 @@ def formatear_contexto(resultados):
 
 
 def actualizar_resumen(session_id: str, history: list[dict], lang: str):
-    if len(history) < 4:
-        logger.info("No se actualiza resumen: menos de 4 mensajes en el historial.")
+    if len(history) < 2:
+        logger.info("No se actualiza resumen: menos de 2 mensajes en el historial.")
         return
 
     texto_conv = "\n".join(
@@ -123,7 +124,12 @@ def actualizar_resumen(session_id: str, history: list[dict], lang: str):
             temperature=0.2,
         )
         resumen = res.choices[0].message.content.strip()
-        supa.table("sessions").update({"summary": resumen}).eq("id", session_id).execute()
+
+        logger.info("Resumen ✅✅✅✅generado para session=%s: %r", session_id, resumen)
+
+        result = supa.table("sessions").update({"summary": resumen}).eq("id", session_id).execute()
+
+        logger.info("Update ✅✅✅✅✅summary result: data=%s", result.data)
     except Exception as exc:  # pragma: no cover
         logger.warning("No se pudo actualizar resumen: %s", exc)
 
