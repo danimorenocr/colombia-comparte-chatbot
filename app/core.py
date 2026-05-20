@@ -3,13 +3,21 @@ from __future__ import annotations
 import json
 import logging
 import os
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
+from uuid import uuid4
 
 import faiss
 from dotenv import load_dotenv
 from groq import Groq
 from sentence_transformers import SentenceTransformer
-from supabase import create_client
+
+try:
+    from supabase import create_client
+except ImportError:  # pragma: no cover
+    create_client = None
 
 try:
     from langdetect import LangDetectException, detect
@@ -63,11 +71,102 @@ CTA = {
     ),
 }
 
+
+@dataclass
+class _InMemoryExecuteResult:
+    data: list[dict[str, Any]]
+
+
+class _InMemoryTableQuery:
+    def __init__(self, client: "_InMemorySupabaseClient", table_name: str):
+        self.client = client
+        self.table_name = table_name
+        self._operation = "select"
+        self._payload: dict[str, Any] | None = None
+        self._selected_columns: str | None = None
+        self._filters: list[tuple[str, Any]] = []
+        self._order_field: str | None = None
+        self._order_desc = False
+        self._limit: int | None = None
+
+    def insert(self, payload: dict[str, Any]):
+        self._operation = "insert"
+        self._payload = payload
+        return self
+
+    def select(self, columns: str):
+        self._operation = "select"
+        self._selected_columns = columns
+        return self
+
+    def update(self, payload: dict[str, Any]):
+        self._operation = "update"
+        self._payload = payload
+        return self
+
+    def eq(self, field: str, value: Any):
+        self._filters.append((field, value))
+        return self
+
+    def order(self, field: str, desc: bool = False):
+        self._order_field = field
+        self._order_desc = desc
+        return self
+
+    def limit(self, amount: int):
+        self._limit = amount
+        return self
+
+    def execute(self):
+        rows = self.client._tables.setdefault(self.table_name, [])
+
+        if self._operation == "insert":
+            row = dict(self._payload or {})
+            row.setdefault("id", str(uuid4()))
+            row.setdefault("created_at", datetime.now(timezone.utc).isoformat())
+            rows.append(row)
+            return _InMemoryExecuteResult(data=[row])
+
+        matched = [row for row in rows if all(row.get(field) == value for field, value in self._filters)]
+
+        if self._operation == "update":
+            payload = self._payload or {}
+            updated_rows = []
+            for row in rows:
+                if all(row.get(field) == value for field, value in self._filters):
+                    row.update(payload)
+                    updated_rows.append(row)
+            return _InMemoryExecuteResult(data=updated_rows)
+
+        if self._order_field:
+            matched = sorted(matched, key=lambda row: row.get(self._order_field), reverse=self._order_desc)
+
+        if self._limit is not None:
+            matched = matched[: self._limit]
+
+        if self._selected_columns and self._selected_columns != "*":
+            columns = [column.strip() for column in self._selected_columns.split(",")]
+            matched = [{column: row.get(column) for column in columns} for row in matched]
+
+        return _InMemoryExecuteResult(data=matched)
+
+
+class _InMemorySupabaseClient:
+    def __init__(self):
+        self._tables: dict[str, list[dict[str, Any]]] = {}
+
+    def table(self, table_name: str):
+        return _InMemoryTableQuery(self, table_name)
+
 load_dotenv(PROJECT_ROOT / ".env")
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-supa = create_client(SUPABASE_URL, SUPABASE_KEY)
+if create_client and SUPABASE_URL and SUPABASE_KEY:
+    supa = create_client(SUPABASE_URL, SUPABASE_KEY)
+else:
+    logger.warning("Supabase no disponible; usando almacenamiento en memoria temporal.")
+    supa = _InMemorySupabaseClient()
 
 print("⏳ Iniciando API RAG Colombia Comparte v3 (Groq + Country)...")
 
