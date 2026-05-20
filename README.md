@@ -69,6 +69,13 @@ Usuario -> POST /preguntar
 Intento 3/
 ├── api.py
 ├── analytics_dashboard.py
+├── app/
+│   ├── __init__.py
+│   ├── core.py
+│   ├── main.py
+│   ├── routes.py
+│   ├── schemas.py
+│   └── services.py
 ├── requirements.txt
 ├── README.md
 ├── .env
@@ -80,7 +87,12 @@ Intento 3/
 
 ### Archivos principales
 
-- `api.py`: API principal con endpoints RAG, sesiones, analíticas y lógica de negocio.
+- `api.py`: wrapper mínimo para seguir ejecutando con `uvicorn api:app`.
+- `app/main.py`: crea la aplicación FastAPI y registra rutas.
+- `app/routes.py`: endpoints del chatbot y analíticas.
+- `app/core.py`: configuración, clientes y recursos compartidos.
+- `app/schemas.py`: modelos Pydantic.
+- `app/services.py`: lógica de negocio RAG, sesiones y analíticas.
 - `analytics_dashboard.py`: renderiza el dashboard HTML.
 - `data/chunks.json`: chunks recuperables para el motor RAG.
 - `data/index.faiss`: índice vectorial de FAISS.

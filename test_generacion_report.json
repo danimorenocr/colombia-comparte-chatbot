@@ -1,0 +1,104 @@
+{
+  "timestamp_utc": "2026-05-20T00:48:09.195997+00:00",
+  "base_url": "http://127.0.0.1:8000",
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0,
+    "pass_rate": 100.0,
+    "by_category": {
+      "functional": {
+        "total": 4,
+        "passed": 4,
+        "pass_rate": 100.0
+      },
+      "quality": {
+        "total": 1,
+        "passed": 1,
+        "pass_rate": 100.0
+      },
+      "negative": {
+        "total": 5,
+        "passed": 5,
+        "pass_rate": 100.0
+      }
+    },
+    "status_counter": {
+      "200": 5,
+      "400": 2,
+      "422": 3
+    }
+  },
+  "results": [
+    {
+      "name": "Saludo inicial",
+      "category": "functional",
+      "ok": true,
+      "detail": "ok | saludo inicial",
+      "status_code": 200
+    },
+    {
+      "name": "Generación ES lead",
+      "category": "functional",
+      "ok": true,
+      "detail": "ok | reply_chars=1143 fuentes=3 chunks=3",
+      "status_code": 200
+    },
+    {
+      "name": "Generación EN lead",
+      "category": "functional",
+      "ok": true,
+      "detail": "ok | reply_chars=1364 fuentes=3 chunks=3",
+      "status_code": 200
+    },
+    {
+      "name": "Generación ES no lead",
+      "category": "functional",
+      "ok": true,
+      "detail": "ok | reply_chars=548 fuentes=3 chunks=3",
+      "status_code": 200
+    },
+    {
+      "name": "Fallback sin contexto (ES)",
+      "category": "quality",
+      "ok": true,
+      "detail": "ok | fallback correcto",
+      "status_code": 200
+    },
+    {
+      "name": "Error mensaje vacío en chat",
+      "category": "negative",
+      "ok": true,
+      "detail": "ok | status=400 detail=El campo 'message' no puede estar vacío.",
+      "status_code": 400
+    },
+    {
+      "name": "Error límite 500 chars",
+      "category": "negative",
+      "ok": true,
+      "detail": "ok | status=400 detail=La pregunta no puede superar 500 caracteres.",
+      "status_code": 400
+    },
+    {
+      "name": "Error schema sin message",
+      "category": "negative",
+      "ok": true,
+      "detail": "ok | status=422 detail=[{'type': 'missing', 'loc': ['body', 'message'], 'msg': 'Field required', 'input': {'country': 'Colombia', 'language': 'es', 'action': 'chat', 'history': []}}]",
+      "status_code": 422
+    },
+    {
+      "name": "Error schema message número",
+      "category": "negative",
+      "ok": true,
+      "detail": "ok | status=422 detail=[{'type': 'string_type', 'loc': ['body', 'message'], 'msg': 'Input should be a valid string', 'input': 12345}]",
+      "status_code": 422
+    },
+    {
+      "name": "Error schema history inválido",
+      "category": "negative",
+      "ok": true,
+      "detail": "ok | status=422 detail=[{'type': 'list_type', 'loc': ['body', 'history'], 'msg': 'Input should be a valid list', 'input': 'esto debería ser lista'}]",
+      "status_code": 422
+    }
+  ]
+}
