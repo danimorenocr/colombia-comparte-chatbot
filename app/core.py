@@ -46,6 +46,19 @@ FALLBACK = {
     "en": "I don't have enough information to answer that question with the available data.",
 }
 
+OUT_OF_CONTEXT = {
+    "es": (
+        "Lo siento, esa pregunta está fuera del alcance de Colombia Comparte. "
+        "Soy un asistente especializado en emprendimiento, negocios y oportunidades en Latinoamérica. "
+        "¿Hay algo sobre tu negocio o emprendimiento que pueda ayudarte? 🚀"
+    ),
+    "en": (
+        "Sorry, that question is outside the scope of Colombia Comparte. "
+        "I'm a specialized assistant for entrepreneurship, business, and opportunities in Latin America. "
+        "Is there anything about your business or entrepreneurship that I can help you with? 🚀"
+    ),
+}
+
 PALABRAS_NEGOCIO = [
     "emprendimiento", "emprender", "negocio", "empresa", "startup", "pyme",
     "producto", "servicio", "vender", "venta", "cliente", "mercado",

@@ -11,6 +11,7 @@ from app.services import (
     crear_sesion,
     detectar_idioma,
     es_intencion_negocio,
+    es_fuera_de_contexto,
     formatear_contexto,
     generar,
     guardar_mensaje,
@@ -118,12 +119,27 @@ def preguntar(body: PreguntaRequest):
     history = cargar_historial(session_id, ultimos_n=6)
     resumen = obtener_resumen(session_id)
 
+    # Verificar si la pregunta está fuera de contexto
+    fuera_de_contexto = es_fuera_de_contexto(resultados, lead)
+    
+    if fuera_de_contexto:
+        # Pregunta fuera de contexto y NO es de negocio → rechazar
+        from app.core import OUT_OF_CONTEXT
+        reply = OUT_OF_CONTEXT.get(lang, OUT_OF_CONTEXT["es"])
+        logger.info("Rejecting out-of-context question language=%s", lang)
+        guardar_mensaje(session_id, "user", pregunta, is_lead=lead)
+        guardar_mensaje(session_id, "assistant", reply, is_lead=lead)
+        history_actualizado = cargar_historial(session_id, ultimos_n=6)
+        actualizar_resumen(session_id, history_actualizado, lang)
+        return RespuestaResponse(reply=reply, idioma_detectado=lang, es_lead=lead, session_id=session_id)
+
     if not resultados:
+        # No hay resultados pero SÍ es de negocio → generar respuesta sin contexto
         from app.core import FALLBACK, CTA
         reply = FALLBACK.get(lang, FALLBACK["es"])
         if lead:
             reply += CTA[lang]
-        logger.info("Returning fallback response language=%s lead=%s", lang, lead)
+        logger.info("Returning fallback response for business intent language=%s lead=%s", lang, lead)
         guardar_mensaje(session_id, "user", pregunta, is_lead=lead)
         guardar_mensaje(session_id, "assistant", reply, is_lead=lead)
         history_actualizado = cargar_historial(session_id, ultimos_n=6)

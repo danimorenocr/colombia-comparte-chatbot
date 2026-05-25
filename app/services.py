@@ -84,6 +84,19 @@ def es_intencion_negocio(texto: str) -> bool:
     return any(palabra in texto_lower for palabra in PALABRAS_NEGOCIO)
 
 
+def es_fuera_de_contexto(resultados: list, es_negocio: bool) -> bool:
+    """
+    Detecta si una pregunta está fuera de contexto.
+    
+    Una pregunta está fuera de contexto si:
+    - No tiene resultados relevantes (no encuentra nada en la base de datos)
+    - Y NO es una pregunta de negocio/emprendimiento
+    
+    Si es de negocio, se responde igual aunque no haya contexto.
+    """
+    return len(resultados) == 0 and not es_negocio
+
+
 def retrieve(query: str):
     q_vec = embed_model.encode([query], normalize_embeddings=True).astype("float32")
     scores, ids = index.search(q_vec, TOP_K)
@@ -199,6 +212,7 @@ def generar(
             "2. If information is not in the context, say you don't have that data and suggest contacting the team.\n"
             "3. Respond in English, warmly and concisely (max 3 paragraphs).\n"
             "4. Do NOT use the words 'context', 'document', or 'section'.\n"
+            "5. IMPORTANT: If a question is about topics completely unrelated to entrepreneurship, business, or Latin America (like general knowledge, entertainment, politics, etc.), politely decline and redirect to your expertise.\n"
             f"{regla_pais_en}"
             f"{regla_lead_en}"
             f"{resumen_ctx}\nCONTEXT:\n{contexto}"
@@ -213,6 +227,7 @@ def generar(
             "2. Si la información no está en el contexto, dilo y sugiere contactar al equipo.\n"
             "3. Responde en español, de forma cálida y concisa (máximo 3 párrafos).\n"
             "4. NO uses las palabras 'contexto', 'documento' ni 'sección'.\n"
+            "5. IMPORTANTE: Si una pregunta trata sobre temas completamente ajenos a emprendimiento, negocios u oportunidades en Latinoamérica (como conocimiento general, entretenimiento, política, etc.), recházala educadamente y redirige hacia tu expertise.\n"
             f"{regla_pais_es}"
             f"{regla_lead_es}"
             f"{resumen_ctx}\nCONTEXTO:\n{contexto}"
