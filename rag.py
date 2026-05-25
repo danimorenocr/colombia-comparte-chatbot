@@ -1,9 +1,3 @@
-# ============================================================
-# SEMANA 1 - RAG Colombia Comparte
-# Chunking + Embeddings + FAISS
-# Instalar: pip install sentence-transformers faiss-cpu numpy
-# ============================================================
-
 import re
 import json
 import logging
@@ -12,7 +6,6 @@ import faiss
 from sentence_transformers import SentenceTransformer
 from datetime import datetime
 
-# ── CONFIGURAR LOGGING ──────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] %(levelname)-8s - %(message)s',
@@ -24,16 +17,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ── CONFIG ──────────────────────────────────────────────────
 ARCHIVO_TXT   = "data/Colombia_Comparte_BASE_RAG_v2.txt"
 MODELO_EMBED  = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 CHUNKS_JSON   = "data/chunks.json"
 INDEX_FAISS   = "data/index.faiss"
-TOP_K         = 3          # cuántos chunks devolver por búsqueda
-# ────────────────────────────────────────────────────────────
+TOP_K         = 3    
 
 
-# 1. CARGAR TEXTO
 def cargar_texto(path):
     logger.info(f"Iniciando carga de archivo: {path}")
     try:
@@ -49,7 +39,6 @@ def cargar_texto(path):
         raise
 
 
-# 2. CHUNKING POR SECCIONES  [SECCIÓN N - TEMA]
 def hacer_chunks(texto):
     logger.info("Iniciando proceso de chunking...")
     try:
@@ -58,7 +47,7 @@ def hacer_chunks(texto):
         logger.debug(f"Encontradas {len(titulos)} secciones en el texto")
 
         chunks = []
-        for i, contenido in enumerate(partes[1:]):  # partes[0] es el encabezado
+        for i, contenido in enumerate(partes[1:]): 
             bloque = contenido.strip()
             if not bloque:
                 logger.debug(f"Sección {i+1} vacía, omitida")
@@ -75,7 +64,6 @@ def hacer_chunks(texto):
         raise
 
 
-# 3. GENERAR EMBEDDINGS
 def generar_embeddings(chunks, modelo_nombre):
     logger.info(f"Iniciando generación de embeddings")
     logger.info(f"Modelo a utilizar: {modelo_nombre}")
@@ -94,7 +82,6 @@ def generar_embeddings(chunks, modelo_nombre):
         raise
 
 
-# 4. GUARDAR CHUNKS EN JSON
 def guardar_chunks(chunks, path):
     logger.info(f"Guardando chunks en: {path}")
     try:
@@ -106,7 +93,6 @@ def guardar_chunks(chunks, path):
         raise
 
 
-# 5. CREAR Y GUARDAR ÍNDICE FAISS
 def crear_indice(embeddings, path):
     logger.info(f"Iniciando creación de índice FAISS")
     logger.info(f"Dimensión de embeddings: {embeddings.shape[1]}")
@@ -126,7 +112,6 @@ def crear_indice(embeddings, path):
         raise
 
 
-# 6. FUNCIÓN DE BÚSQUEDA SEMÁNTICA
 def retrieve_context(query, modelo, index, chunks, top_k=TOP_K):
     logger.debug(f"Iniciando búsqueda semántica. Query: '{query}' (top_k={top_k})")
     try:
@@ -150,7 +135,6 @@ def retrieve_context(query, modelo, index, chunks, top_k=TOP_K):
         raise
 
 
-# 7. VALIDACIÓN: prueba de búsqueda
 def validar_busqueda(modelo, index, chunks):
     logger.info("═" * 60)
     logger.info("INICIANDO VALIDACIÓN DE BÚSQUEDA SEMÁNTICA")
@@ -179,7 +163,6 @@ def validar_busqueda(modelo, index, chunks):
         raise
 
 
-# ── MAIN ─────────────────────────────────────────────────────
 if __name__ == "__main__":
     import os
     

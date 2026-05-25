@@ -1,23 +1,15 @@
-# ============================================================
-# SEMANA 2 v2 - RAG Colombia Comparte
-# Motor de Recuperación — evaluador corregido + MIN_SCORE ajustado
-# ============================================================
-
 import json
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 
-# ── CONFIG ──────────────────────────────────────────────────
 MODELO_EMBED  = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 CHUNKS_JSON   = "data/chunks.json"
 INDEX_FAISS   = "data/index.faiss"
 TOP_K         = 3
-MIN_SCORE     = 0.20   # más bajo para no filtrar preguntas de contacto/datos
-# ────────────────────────────────────────────────────────────
+MIN_SCORE     = 0.20  
 
 
-# 1. CARGAR SISTEMA
 def cargar_sistema():
     print("⏳ Cargando modelo de embeddings...")
     modelo = SentenceTransformer(MODELO_EMBED)
@@ -30,7 +22,6 @@ def cargar_sistema():
     return modelo, index, chunks
 
 
-# 2. RETRIEVE CONTEXT
 def retrieve_context(query, modelo, index, chunks, top_k=TOP_K, min_score=MIN_SCORE):
     if not query.strip():
         return []
@@ -50,7 +41,6 @@ def retrieve_context(query, modelo, index, chunks, top_k=TOP_K, min_score=MIN_SC
     return resultados
 
 
-# 3. FORMATEAR CONTEXTO PARA EL LLM
 def formatear_contexto(resultados):
     if not resultados:
         return ""
@@ -60,12 +50,10 @@ def formatear_contexto(resultados):
     return "\n\n---\n\n".join(partes)
 
 
-# 4. EVALUACIÓN CORREGIDA
-# La lógica real de RAG: lo que importa es que ALGUNO de los top_k chunks
-# contenga la info necesaria, no que el chunk #1 sea exactamente el esperado.
+
 def evaluar_retrieval(modelo, index, chunks):
     casos = [
-        # (pregunta, palabras clave que deben aparecer en ALGUNO de los chunks recuperados, es_irrelevante)
+       
         ("¿Qué es Colombia Comparte?",               ["colombia comparte", "organización", "autosostenible"],  False),
         ("¿Cómo me inscribo a Comparte Academia?",   ["inscri", "formulario", "edifica"],                     False),
         ("¿Cuántas personas han sido impactadas?",   ["1.200", "impactado", "trayectoria"],                   False),
@@ -76,7 +64,7 @@ def evaluar_retrieval(modelo, index, chunks):
         ("¿Cómo puedo donar?",                       ["donacion", "donación", "bancolombia"],                 False),
         ("¿Qué es DESKUBRE?",                        ["deskubre", "1 mes", "exploración"],                   False),
         ("¿Cuál es el teléfono de contacto?",        ["316", "3087", "teléfono"],                            False),
-        # Preguntas irrelevantes — deben retornar vacío o score muy bajo
+     
         ("¿Cuánto cuesta una pizza?",                [],                                                      True),
         ("¿Cómo funciona un motor de avión?",        [],                                                      True),
     ]
@@ -94,7 +82,6 @@ def evaluar_retrieval(modelo, index, chunks):
         scores_str  = [r["score"] for r in resultados]
 
         if es_irrelevante:
-            # Correcto si no devuelve nada o todos los scores son muy bajos
             max_score = max((r["score"] for r in resultados), default=0)
             if not resultados or max_score < 0.40:
                 print(f"\n🔍 {pregunta}")
@@ -104,7 +91,6 @@ def evaluar_retrieval(modelo, index, chunks):
                 print(f"\n🔍 {pregunta}")
                 print(f"   ⚠️  FALSO POSITIVO — score {max_score} → {secciones[0]}")
         else:
-            # Correcto si alguna keyword aparece en el contexto combinado
             encontrado = any(kw in texto_total for kw in keywords)
             if encontrado:
                 print(f"\n🔍 {pregunta}")
@@ -129,7 +115,6 @@ def evaluar_retrieval(modelo, index, chunks):
     return pct
 
 
-# 5. ANÁLISIS DE CASOS BORDE
 def analizar_fallas(modelo, index, chunks):
     preguntas = [
         "¿Testimonios?",
@@ -148,11 +133,9 @@ def analizar_fallas(modelo, index, chunks):
             print(f"   → {r['texto'][:100]}...")
 
 
-# ── MAIN ─────────────────────────────────────────────────────
 if __name__ == "__main__":
     modelo, index, chunks = cargar_sistema()
 
-    # Demo
     print("─" * 65)
     query_demo = "¿Qué programas ofrece Colombia Comparte para emprendedores?"
     resultados = retrieve_context(query_demo, modelo, index, chunks)
@@ -163,10 +146,8 @@ if __name__ == "__main__":
         print(f"  [{r['score']}] {r['seccion']}")
     print(f"\nContexto (primeros 400 chars):\n{contexto[:400]}...\n")
 
-    # Evaluación
     evaluar_retrieval(modelo, index, chunks)
 
-    # Casos borde
     analizar_fallas(modelo, index, chunks)
 
     print("\n🎉 Semana 2 lista. retrieve_context() y formatear_contexto() listos para Semana 3.")

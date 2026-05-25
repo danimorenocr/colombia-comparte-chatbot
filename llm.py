@@ -1,17 +1,9 @@
-# ============================================================
-# SEMANA 3 - RAG Colombia Comparte
-# Generación con LLM (Qwen2.5-0.5B-Instruct)
-# Requiere haber corrido semana1 y semana2 primero
-# pip install transformers accelerate
-# ============================================================
-
 import json
 import torch
 import faiss
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from sentence_transformers import SentenceTransformer
 
-# ── CONFIG ──────────────────────────────────────────────────
 MODELO_EMBED  = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 MODELO_LLM    = "Qwen/Qwen2.5-0.5B-Instruct"
 CHUNKS_JSON   = "data/chunks.json"
@@ -19,14 +11,11 @@ INDEX_FAISS   = "data/index.faiss"
 TOP_K         = 3
 MIN_SCORE     = 0.20
 
-# Parámetros de generación
 MAX_NEW_TOKENS = 250
 TEMPERATURE    = 0.2
 TOP_P          = 0.85
-# ────────────────────────────────────────────────────────────
 
 
-# 1. CARGAR SISTEMA DE RETRIEVAL (semana 2)
 def cargar_retrieval():
     print("⏳ Cargando modelo de embeddings...")
     embed = SentenceTransformer(MODELO_EMBED)
@@ -39,7 +28,6 @@ def cargar_retrieval():
     return embed, index, chunks
 
 
-# 2. CARGAR LLM
 def cargar_llm():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"⏳ Cargando LLM: {MODELO_LLM} en {device}...")
@@ -56,7 +44,6 @@ def cargar_llm():
     return tokenizer, model, device
 
 
-# 3. RETRIEVE CONTEXT (copiado de semana 2)
 def retrieve_context(query, embed_model, index, chunks):
     if not query.strip():
         return []
@@ -84,7 +71,6 @@ def formatear_contexto(resultados):
     )
 
 
-# 4. CONSTRUIR PROMPT
 def construir_prompt(query, contexto):
     system = (
         "Eres el asistente virtual oficial de Colombia Comparte / Latinoamérica Comparte. "
@@ -107,13 +93,9 @@ def construir_prompt(query, contexto):
     return system, user
 
 
-# 4b. VERIFICACIÓN POST-GENERACIÓN ANTI-ALUCINACIÓN
 PALABRAS_RIESGO = [
-    # precios inventados
     "$", "usd", "cop", "costo", "precio", "vale", "gratis", "gratuito", "pago",
-    # datos de contacto inventados
     "@gmail", "@hotmail", "@yahoo",
-    # ubicaciones inventadas
     "medellín", "cali", "barranquilla", "cartagena",
 ]
 
@@ -129,12 +111,9 @@ def verificar_alucinacion(respuesta, contexto):
     return False, ""
 
 
-# 5. GENERAR RESPUESTA
 def generate_answer(query, embed_model, index, chunks, tokenizer, model, device):
-    # Retrieval
     resultados = retrieve_context(query, embed_model, index, chunks)
 
-    # Fallback si no hay contexto relevante
     if not resultados:
         return (
             "No tengo suficiente información para responder esa pregunta con los datos disponibles.",
@@ -144,13 +123,11 @@ def generate_answer(query, embed_model, index, chunks, tokenizer, model, device)
     contexto = formatear_contexto(resultados)
     system, user = construir_prompt(query, contexto)
 
-    # Formato chat de Qwen
     messages = [
         {"role": "system", "content": system},
         {"role": "user",   "content": user},
     ]
 
-    # Tokenizar
     text = tokenizer.apply_chat_template(
         messages,
         tokenize=False,
@@ -158,7 +135,6 @@ def generate_answer(query, embed_model, index, chunks, tokenizer, model, device)
     )
     inputs = tokenizer([text], return_tensors="pt").to(device)
 
-    # Generar
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
@@ -169,15 +145,12 @@ def generate_answer(query, embed_model, index, chunks, tokenizer, model, device)
             pad_token_id=tokenizer.eos_token_id,
         )
 
-    # Decodificar solo los tokens nuevos
     input_len = inputs["input_ids"].shape[1]
     generated = outputs[0][input_len:]
     respuesta = tokenizer.decode(generated, skip_special_tokens=True).strip()
 
-    # Limpiar texto repetido o artefactos
     respuesta = limpiar_respuesta(respuesta, query)
 
-    # Verificación post-generación anti-alucinación
     es_aluc, razon = verificar_alucinacion(respuesta, contexto)
     if es_aluc:
         print(f"   🛡️  Alucinación bloqueada ({razon})")
@@ -186,33 +159,26 @@ def generate_answer(query, embed_model, index, chunks, tokenizer, model, device)
     return respuesta, resultados
 
 
-# 6. LIMPIAR SALIDA DEL MODELO
 def limpiar_respuesta(texto, query):
-    # Quitar repeticiones de la pregunta al inicio
     if texto.lower().startswith(query.lower()):
         texto = texto[len(query):].strip()
 
-    # Quitar líneas vacías múltiples
     lineas = [l for l in texto.splitlines() if l.strip()]
     texto = "\n".join(lineas)
 
-    # Control de alucinación: si la respuesta es muy corta o vacía → fallback
     if len(texto) < 10:
         return "No tengo suficiente información para responder esa pregunta con los datos disponibles."
 
     return texto
 
 
-# 7. PRUEBAS CONTROLADAS
 def ejecutar_pruebas(embed_model, index, chunks, tokenizer, model, device):
     casos = [
-        # Preguntas que SÍ están en el contexto
         ("¿Qué es Colombia Comparte?",              True),
         ("¿Cuánto dura el programa ESTRUCTURA?",    True),
         ("¿Cómo me inscribo a Comparte Academia?",  True),
         ("¿Quiénes son los fundadores?",            True),
         ("¿Cuál es el teléfono de contacto?",       True),
-        # Preguntas que NO están en el contexto
         ("¿Cuánto cuesta el programa?",             False),
         ("¿Tienen sede en Medellín?",               False),
     ]
@@ -235,7 +201,6 @@ def ejecutar_pruebas(embed_model, index, chunks, tokenizer, model, device):
         if resultados:
             print(f"Fuentes: {[r['seccion'] for r in resultados]}")
 
-        # Verificar control de alucinaciones
         if not en_contexto:
             if "no tengo suficiente información" in respuesta.lower():
                 print("✅ Fallback correcto — no alucinó")
@@ -245,13 +210,10 @@ def ejecutar_pruebas(embed_model, index, chunks, tokenizer, model, device):
     print("\n" + "=" * 65)
 
 
-# ── MAIN ─────────────────────────────────────────────────────
 if __name__ == "__main__":
-    # Cargar todo
     embed_model, index, chunks = cargar_retrieval()
     tokenizer, model, device   = cargar_llm()
 
-    # Demo rápido
     print("─" * 65)
     print("DEMO: Pipeline completo query → retrieval → LLM → respuesta")
     print("─" * 65)
@@ -265,7 +227,6 @@ if __name__ == "__main__":
         print(f"  [{r['score']}] {r['seccion']}")
     print(f"\nRespuesta:\n{respuesta}\n")
 
-    # Pruebas controladas
     ejecutar_pruebas(embed_model, index, chunks, tokenizer, model, device)
 
     print("\n🎉 Semana 3 completa.")
