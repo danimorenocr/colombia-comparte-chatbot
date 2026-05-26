@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 from unittest import result
 
 from app.core import (
@@ -10,6 +13,8 @@ from app.core import (
     LANGDETECT_AVAILABLE,
     MIN_SCORE,
     PALABRAS_NEGOCIO,
+    SUPABASE_KEY,
+    SUPABASE_URL,
     TOP_K,
     chunks,
     embed_model,
@@ -252,7 +257,30 @@ def generar(
 
 
 def obtener_analiticas():
-    leads = supa.table("analytics_leads_por_pais").select("*").execute().data
-    diaria = supa.table("analytics_actividad_diaria").select("*").limit(30).execute().data
-    faqs = supa.table("analytics_preguntas_frecuentes").select("*").execute().data
+    leads = _fetch_supabase_rest("analytics_leads_por_pais")
+    diaria = _fetch_supabase_rest("analytics_actividad_diaria", limit=30)
+    faqs = _fetch_supabase_rest("analytics_preguntas_frecuentes")
     return {"leads_por_pais": leads, "actividad_diaria": diaria, "faqs": faqs}
+
+
+def _fetch_supabase_rest(table_name: str, limit: int | None = None) -> list[dict]:
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        return []
+
+    query = {"select": "*"}
+    if limit is not None:
+        query["limit"] = str(limit)
+
+    url = f"{SUPABASE_URL}/rest/v1/{table_name}?{urlencode(query)}"
+    request = Request(
+        url,
+        headers={
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Accept": "application/json",
+        },
+    )
+    with urlopen(request, timeout=20) as response:
+        payload = response.read().decode("utf-8")
+    data = json.loads(payload)
+    return data if isinstance(data, list) else []
